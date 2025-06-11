@@ -6,7 +6,7 @@ use nix::{
 use std::{
     ffi::CString,
     fs::{create_dir_all, write},
-    path::Path,
+    path::Path
 };
 
 #[derive(Debug)]
@@ -26,12 +26,11 @@ impl Default for SandboxConfig {
     }
 }
 
-
 pub fn run_sandbox(config: SandboxConfig) -> Result<(), String> {
 
     println!("config setting successfully, {:?}",config);
 
-    let lower = format!("{}/lowdir", config.base_dir);
+    let lower = format!("{}/lowerdir", config.base_dir);
     let upper = format!("{}/upperdir", config.base_dir);
     let work = format!("{}/workdir", config.base_dir);
     let merged = format!("{}/merged", config.base_dir);
@@ -77,7 +76,7 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<(), String> {
 
     match unsafe { fork() } {
         Ok(ForkResult::Child) => {
-            let proc_path = format!("{}/proc", merged);
+            let proc_path: String = format!("{}/proc", merged);
             mount(Some("proc"), proc_path.as_str(), Some("proc"), MsFlags::empty(), None::<&str>)
                 .map_err(|e| format!("Mount /proc failed: {}", e))?;
 
