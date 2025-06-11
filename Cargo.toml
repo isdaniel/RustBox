@@ -1,0 +1,11 @@
+[package]
+name = "rustbox"
+version = "0.1.0"
+edition = "2021"
+
+[profile.release]
+debug = true
+
+[dependencies]
+nix =  { version = "0.27", features = ["process", "mount", "sched", "fs"] }
+libc = "0.2"
