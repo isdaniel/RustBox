@@ -791,6 +791,26 @@ Description: libcrypt shared library
  as well as a set of extended interfaces like 'crypt_gensalt'.
 Original-Maintainer: Marco d'Itri <md@linux.it>
 
+Package: libdb5.3t64
+Status: install ok installed
+Priority: optional
+Section: libs
+Installed-Size: 1761
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Multi-Arch: same
+Source: db5.3
+Version: 5.3.28+dfsg2-7
+Replaces: libdb5.3
+Provides: libdb5.3 (= 5.3.28+dfsg2-7)
+Depends: libc6 (>= 2.38)
+Breaks: libdb5.3 (<< 5.3.28+dfsg2-7)
+Description: Berkeley v5.3 Database Libraries [runtime]
+ This is the runtime package for programs that use the v5.3 Berkeley
+ database library.
+Original-Maintainer: Debian QA Group <packages@qa.debian.org>
+Homepage: http://www.oracle.com/technetwork/database/database-technologies/berkeleydb/overview/index.html
+
 Package: libdebconfclient0
 Status: install ok installed
 Priority: optional
@@ -809,6 +829,25 @@ Description: Debian Configuration Management System (C-implementation library)
  .
  This library allows C programs to interface with cdebconf.
 Original-Maintainer: Debian Install System Team <debian-boot@lists.debian.org>
+
+Package: libexpat1
+Status: install ok installed
+Priority: optional
+Section: libs
+Installed-Size: 384
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Multi-Arch: same
+Source: expat
+Version: 2.6.1-2build1
+Depends: libc6 (>= 2.38)
+Description: XML parsing C library - runtime library
+ This package contains the runtime, shared library of expat, the C
+ library for parsing XML. Expat is a stream-oriented parser in
+ which an application registers handlers for things the parser
+ might find in the XML document (like start tags).
+Homepage: https://libexpat.github.io/
+Original-Maintainer: Laszlo Boszormenyi (GCS) <gcs@debian.org>
 
 Package: libext2fs2t64
 Status: install ok installed
@@ -981,6 +1020,25 @@ Description: GnuPG development runtime library
  It will likely be renamed "gpgrt" in the future.
 Homepage: https://www.gnupg.org/related_software/libgpg-error/
 Original-Maintainer: Debian GnuPG Maintainers <pkg-gnupg-maint@lists.alioth.debian.org>
+
+Package: libgpm2
+Status: install ok installed
+Priority: optional
+Section: libs
+Installed-Size: 44
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Multi-Arch: same
+Source: gpm
+Version: 1.20.7-11
+Depends: libc6 (>= 2.38)
+Suggests: gpm
+Description: General Purpose Mouse - shared library
+ This package provides a library that handles mouse requests
+ and delivers them to applications. See the description for the 'gpm'
+ package for more information.
+Original-Maintainer: Axel Beckert <abe@debian.org>
+Homepage: https://nico.schottelius.org/software/gpm/
 
 Package: libhogweed6t64
 Status: install ok installed
@@ -1356,6 +1414,95 @@ Description: library for accessing process information from /proc
 Homepage: https://gitlab.com/procps-ng/procps
 Original-Maintainer: Craig Small <csmall@debian.org>
 
+Package: libpython3.12-minimal
+Status: install ok installed
+Priority: optional
+Section: python
+Installed-Size: 5169
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Multi-Arch: same
+Source: python3.12
+Version: 3.12.3-1
+Depends: libc6 (>= 2.14), libssl3t64 (>= 3.0.0)
+Recommends: libpython3.12-stdlib
+Conflicts: binfmt-support (<< 1.1.2)
+Conffiles:
+ /etc/python3.12/sitecustomize.py d6b276695157bde06a56ba1b2bc53670
+Description: Minimal subset of the Python language (version 3.12)
+ This package contains some essential modules. It is normally not
+ used on it's own, but as a dependency of python3.12-minimal.
+Original-Maintainer: Matthias Klose <doko@debian.org>
+
+Package: libpython3.12-stdlib
+Status: install ok installed
+Priority: optional
+Section: python
+Installed-Size: 9012
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Multi-Arch: same
+Source: python3.12
+Version: 3.12.3-1
+Replaces: libpython3.12-testsuite (<< 3.12.0-3~), python3-gdbm (<< 3.9.9-1~)
+Depends: libpython3.12-minimal (= 3.12.3-1), media-types | mime-support, netbase, tzdata, libbz2-1.0, libc6 (>= 2.38), libcrypt1 (>= 1:4.1.0), libdb5.3t64, libffi8 (>= 3.4), liblzma5 (>= 5.1.1alpha+20120614), libncursesw6 (>= 6.1), libreadline8t64 (>= 7.0~beta), libsqlite3-0 (>= 3.36.0), libtinfo6 (>= 6)
+Breaks: libpython3.12-testsuite (<< 3.12.0-3~), python3-gdbm (<< 3.9.9-1~)
+Description: Interactive high-level object-oriented language (standard library, version 3.12)
+ Python is a high-level, interactive, object-oriented language. Its 3.12 version
+ includes an extensive class library with lots of goodies for
+ network programming, system administration, sounds and graphics.
+ .
+ This package contains Python 3.12's standard library. It is normally not
+ used on its own, but as a dependency of python3.12.
+Original-Maintainer: Matthias Klose <doko@debian.org>
+
+Package: libpython3.12t64
+Status: install ok installed
+Priority: optional
+Section: libs
+Installed-Size: 8905
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Multi-Arch: same
+Source: python3.12
+Version: 3.12.3-1
+Replaces: libpython3.12
+Provides: libpython3.12 (= 3.12.3-1)
+Depends: libpython3.12-stdlib (= 3.12.3-1), libc6 (>= 2.38), libexpat1 (>= 2.6.0), zlib1g (>= 1:1.2.0)
+Breaks: libpython3.12 (<< 3.12.3-1)
+Description: Shared Python runtime library (version 3.12)
+ Python is a high-level, interactive, object-oriented language. Its 3.12 version
+ includes an extensive class library with lots of goodies for
+ network programming, system administration, sounds and graphics.
+ .
+ This package contains the shared runtime library, normally not needed
+ for programs using the statically linked interpreter.
+Original-Maintainer: Matthias Klose <doko@debian.org>
+
+Package: libreadline8t64
+Status: install ok installed
+Priority: optional
+Section: libs
+Installed-Size: 467
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Multi-Arch: same
+Source: readline
+Version: 8.2-4build1
+Replaces: libreadline8
+Provides: libreadline8 (= 8.2-4build1)
+Depends: readline-common, libc6 (>= 2.38), libtinfo6 (>= 6)
+Breaks: libreadline8 (<< 8.2-4build1)
+Description: GNU readline and history libraries, run-time libraries
+ The GNU readline library aids in the consistency of user interface
+ across discrete programs that need to provide a command line
+ interface.
+ .
+ The GNU history library provides a consistent user interface for
+ recalling lines of previously typed input.
+Homepage: https://tiswww.case.edu/php/chet/readline/rltop.html
+Original-Maintainer: Matthias Klose <doko@debian.org>
+
 Package: libseccomp2
 Status: install ok installed
 Priority: optional
@@ -1512,6 +1659,48 @@ Description: smart column output alignment library
  This smart column output alignment library is used by fdisk utilities.
 Homepage: https://www.kernel.org/pub/linux/utils/util-linux/
 Original-Maintainer: util-linux packagers <util-linux@packages.debian.org>
+
+Package: libsodium23
+Status: install ok installed
+Priority: optional
+Section: libs
+Installed-Size: 401
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Multi-Arch: same
+Source: libsodium
+Version: 1.0.18-1build3
+Depends: libc6 (>= 2.34)
+Description: Network communication, cryptography and signaturing library
+ NaCl (pronounced "salt") is a new easy-to-use high-speed software library for
+ network communication, encryption, decryption, signatures, etc.
+ .
+ NaCl's goal is to provide all of the core operations needed to build
+ higher-level cryptographic tools.
+ .
+ Sodium is a portable, cross-compilable, installable, packageable fork of NaCl,
+ with a compatible API.
+Homepage: https://www.libsodium.org/
+Original-Maintainer: Laszlo Boszormenyi (GCS) <gcs@debian.org>
+
+Package: libsqlite3-0
+Status: install ok installed
+Priority: optional
+Section: libs
+Installed-Size: 1730
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Multi-Arch: same
+Source: sqlite3
+Version: 3.45.1-1ubuntu2
+Depends: libc6 (>= 2.38)
+Breaks: crowdsec (<< 1.4), python-migrate (<< 0.11.0-4~), python3-migrate (<< 0.11.0-4~)
+Description: SQLite 3 shared library
+ SQLite is a C library that implements an SQL database engine.
+ Programs that link with the SQLite library can have SQL database
+ access without running a separate RDBMS process.
+Homepage: https://www.sqlite.org/
+Original-Maintainer: Laszlo Boszormenyi (GCS) <gcs@debian.org>
 
 Package: libss2
 Status: install ok installed
@@ -1823,6 +2012,31 @@ Description: Pattern scanning and text processing language
 Homepage: https://invisible-island.net/mawk/
 Original-Maintainer: Boyuan Yang <byang@debian.org>
 
+Package: media-types
+Status: install ok installed
+Priority: standard
+Section: net
+Installed-Size: 93
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: all
+Multi-Arch: foreign
+Version: 10.1.0
+Replaces: mime-support (<< 3.65)
+Breaks: mime-support (<< 3.65)
+Conffiles:
+ /etc/mime.types e06b55a5d7cb8e9835e1caad087d1636
+Description: List of standard media types and their usual file extension
+ This package installs the configuration file /etc/mime.types, that lists
+ standard media types (originally known as "MIME" types) and their usual file
+ extension.  This provides a simple way for programs to have a first guess at a
+ file's content.  On standard Debian desktop systems, one will also find more
+ sophisticated tools, for instance provided by the "file" and "xdg-utils"
+ packages.
+ .
+ The /etc/mime.types file is compiled by hand using mostly information provided
+ by the Internet Assigned Numbers Authority (IANA).
+Original-Maintainer: Mime-Support Packagers <team+debian-mimesupport-packagers@tracker.debian.org>
+
 Package: mount
 Status: install ok installed
 Priority: required
@@ -1888,6 +2102,30 @@ Description: terminal-related programs and man pages
  resetting terminals and such.
 Homepage: https://invisible-island.net/ncurses/
 Original-Maintainer: Ncurses Maintainers <ncurses@packages.debian.org>
+
+Package: netbase
+Status: install ok installed
+Priority: important
+Section: admin
+Installed-Size: 36
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: all
+Multi-Arch: foreign
+Version: 6.4
+Replaces: ebtables (<< 2.0.11-2)
+Breaks: ebtables (<< 2.0.11-2)
+Conffiles:
+ /etc/ethertypes cd7fa874d85f7587e2ed11174d58cf83
+ /etc/protocols 0c247591a720f534fe543401bd4844d6
+ /etc/rpc 2d7748cd0feba2e43ee52d4d7f834188
+ /etc/services 3975f0d8c4e1ecb25f035edfb1ba27ac
+Description: Basic TCP/IP networking system
+ This package provides the necessary infrastructure for basic TCP/IP based
+ networking.
+ .
+ In particular, it supplies common name-to-number mappings in /etc/services,
+ /etc/rpc, /etc/protocols and /etc/ethertypes.
+Original-Maintainer: Marco d'Itri <md@linux.it>
 
 Package: passwd
 Status: install ok installed
@@ -1979,6 +2217,29 @@ Description: /proc file system utilities
 Homepage: https://gitlab.com/procps-ng/procps
 Original-Maintainer: Craig Small <csmall@debian.org>
 
+Package: readline-common
+Status: install ok installed
+Priority: optional
+Section: utils
+Installed-Size: 77
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: all
+Multi-Arch: foreign
+Source: readline
+Version: 8.2-4build1
+Replaces: libreadline-common, libreadline4 (<< 4.3-16), libreadline5 (<< 5.0-11)
+Suggests: readline-doc
+Conflicts: libreadline-common, libreadline5 (<< 5.0-11)
+Description: GNU readline and history libraries, common files
+ The GNU readline library aids in the consistency of user interface
+ across discrete programs that need to provide a command line
+ interface.
+ .
+ The GNU history library provides a consistent user interface for
+ recalling lines of previously typed input.
+Homepage: https://tiswww.case.edu/php/chet/readline/rltop.html
+Original-Maintainer: Matthias Klose <doko@debian.org>
+
 Package: sed
 Essential: yes
 Status: install ok installed
@@ -2066,6 +2327,28 @@ Description: GNU version of the tar archiving utility
 Homepage: https://www.gnu.org/software/tar/
 Original-Maintainer: Janos Lenart <ocsi@debian.org>
 
+Package: tzdata
+Status: install ok installed
+Priority: required
+Section: localization
+Installed-Size: 1381
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: all
+Multi-Arch: foreign
+Version: 2024a-2ubuntu1
+Replaces: tzdata-legacy (= 2023c-8ubuntu1)
+Provides: tzdata-trixie
+Depends: debconf (>= 0.5) | debconf-2.0
+Breaks: tzdata-legacy (= 2023c-8ubuntu1)
+Description: time zone and daylight-saving time data
+ This package contains data required for the implementation of
+ standard local time for many representative locations around the
+ globe. It is updated periodically to reflect changes made by
+ political bodies to time zone boundaries, UTC offsets, and
+ daylight-saving rules.
+Homepage: https://www.iana.org/time-zones
+Original-Maintainer: GNU Libc Maintainers <debian-glibc@lists.debian.org>
+
 Package: ubuntu-keyring
 Status: install ok installed
 Priority: important
@@ -2110,6 +2393,96 @@ Description: miscellaneous system utilities
  interface with real time clock, etc.
 Homepage: https://www.kernel.org/pub/linux/utils/util-linux/
 Original-Maintainer: util-linux packagers <util-linux@packages.debian.org>
+
+Package: vim
+Status: install ok installed
+Priority: optional
+Section: editors
+Installed-Size: 4130
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Version: 2:9.1.0016-1ubuntu7
+Provides: editor
+Depends: vim-common (= 2:9.1.0016-1ubuntu7), vim-runtime (= 2:9.1.0016-1ubuntu7), libacl1 (>= 2.2.23), libc6 (>= 2.38), libgpm2 (>= 1.20.7), libpython3.12t64 (>= 3.12.1), libselinux1 (>= 3.1~), libsodium23 (>= 1.0.14), libtinfo6 (>= 6)
+Suggests: ctags, vim-doc, vim-scripts
+Description: Vi IMproved - enhanced vi editor
+ Vim is an almost compatible version of the UNIX editor Vi.
+ .
+ Many new features have been added: multi level undo, syntax
+ highlighting, command line history, on-line help, filename
+ completion, block operations, folding, Unicode support, etc.
+ .
+ This package contains a version of vim compiled with a rather
+ standard set of features.  This package does not provide a GUI
+ version of Vim.  See the other vim-* packages if you need more
+ (or less).
+Homepage: https://www.vim.org/
+Original-Maintainer: Debian Vim Maintainers <team+vim@tracker.debian.org>
+
+Package: vim-common
+Status: install ok installed
+Priority: important
+Section: editors
+Installed-Size: 1852
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: all
+Multi-Arch: foreign
+Source: vim
+Version: 2:9.1.0016-1ubuntu7
+Replaces: vim-runtime (<< 2:9.0.1658-1~)
+Recommends: xxd, vim | vim-gtk3 | vim-motif | vim-nox | vim-tiny
+Breaks: vim-runtime (<< 2:9.0.1658-1~)
+Conffiles:
+ /etc/vim/vimrc 39f4010c45bc0f6d1df420db9febaba8
+Description: Vi IMproved - Common files
+ Vim is an almost compatible version of the UNIX editor Vi.
+ .
+ This package contains files shared by all non GUI-enabled vim variants
+ available in Debian.  Examples of such shared files are: manpages and
+ configuration files.
+Homepage: https://www.vim.org/
+Original-Maintainer: Debian Vim Maintainers <team+vim@tracker.debian.org>
+
+Package: vim-runtime
+Status: install ok installed
+Priority: optional
+Section: editors
+Installed-Size: 36529
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: all
+Multi-Arch: foreign
+Source: vim
+Version: 2:9.1.0016-1ubuntu7
+Recommends: vim | vim-gtk3 | vim-motif | vim-nox | vim-tiny
+Breaks: vim-tiny (<< 2:9.1.0016-1ubuntu7)
+Enhances: vim-tiny
+Description: Vi IMproved - Runtime files
+ Vim is an almost compatible version of the UNIX editor Vi.
+ .
+ This package contains vimtutor and the architecture independent runtime
+ files, used, if available, by all vim variants available in Debian.
+ Example of such runtime files are: online documentation, rules for
+ language-specific syntax highlighting and indentation, color schemes,
+ and standard plugins.
+Homepage: https://www.vim.org/
+Original-Maintainer: Debian Vim Maintainers <team+vim@tracker.debian.org>
+
+Package: xxd
+Status: install ok installed
+Priority: optional
+Section: editors
+Installed-Size: 152
+Maintainer: Ubuntu Developers <ubuntu-devel-discuss@lists.ubuntu.com>
+Architecture: amd64
+Multi-Arch: foreign
+Source: vim
+Version: 2:9.1.0016-1ubuntu7
+Depends: libc6 (>= 2.34)
+Description: tool to make (or reverse) a hex dump
+ xxd creates a hex dump of a given file or standard input.  It can also convert
+ a hex dump back to its original binary form.
+Homepage: https://www.vim.org/
+Original-Maintainer: Debian Vim Maintainers <team+vim@tracker.debian.org>
 
 Package: zlib1g
 Status: install ok installed

@@ -149,3 +149,56 @@ Name: libraries/restart-without-asking
 Template: libraries/restart-without-asking
 Owners: libc6, libc6:amd64, libpam0g:amd64
 
+Name: tzdata/Areas
+Template: tzdata/Areas
+Value: Asia
+Owners: tzdata
+Flags: seen
+
+Name: tzdata/Zones/Africa
+Template: tzdata/Zones/Africa
+Owners: tzdata
+
+Name: tzdata/Zones/America
+Template: tzdata/Zones/America
+Owners: tzdata
+
+Name: tzdata/Zones/Antarctica
+Template: tzdata/Zones/Antarctica
+Owners: tzdata
+
+Name: tzdata/Zones/Arctic
+Template: tzdata/Zones/Arctic
+Owners: tzdata
+
+Name: tzdata/Zones/Asia
+Template: tzdata/Zones/Asia
+Value: Hong_Kong
+Owners: tzdata
+Flags: seen
+
+Name: tzdata/Zones/Atlantic
+Template: tzdata/Zones/Atlantic
+Owners: tzdata
+
+Name: tzdata/Zones/Australia
+Template: tzdata/Zones/Australia
+Owners: tzdata
+
+Name: tzdata/Zones/Etc
+Template: tzdata/Zones/Etc
+Value: UTC
+Owners: tzdata
+
+Name: tzdata/Zones/Europe
+Template: tzdata/Zones/Europe
+Owners: tzdata
+
+Name: tzdata/Zones/Indian
+Template: tzdata/Zones/Indian
+Owners: tzdata
+
+Name: tzdata/Zones/Pacific
+Template: tzdata/Zones/Pacific
+Owners: tzdata
+

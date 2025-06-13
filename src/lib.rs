@@ -4,9 +4,7 @@ use nix::{
     unistd::{chdir, chroot, execv, fork, ForkResult},
 };
 use std::{
-    ffi::CString,
-    fs::{create_dir_all, write},
-    path::Path, process
+    ffi::CString, fs::{create_dir_all, write}, path::Path, process
 };
 
 const CGROUP_PATH : &str = "/sys/fs/cgroup/sandbox";
@@ -16,6 +14,7 @@ pub struct SandboxConfig {
     pub base_dir: String,
     pub memory_limit: String,
     pub shell_path: String,
+    pub workdir: String,
 }
 
 impl Default for SandboxConfig {
@@ -24,9 +23,12 @@ impl Default for SandboxConfig {
             base_dir: "./rootfs".to_string(),
             memory_limit: String::from("100M"),
             shell_path: "/bin/sh".to_string(),
+            workdir : "/".to_string()
         }
     }
 }
+
+
 
 pub fn run_sandbox(config: SandboxConfig) -> Result<(), String> {
 
@@ -67,7 +69,7 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<(), String> {
             | CloneFlags::CLONE_NEWUTS
             | CloneFlags::CLONE_NEWIPC
             | CloneFlags::CLONE_NEWNET
-            | CloneFlags::CLONE_NEWUSER,
+            | CloneFlags::CLONE_NEWUSER, //isolation USER namespace
     )
     .map_err(|e| format!("unshare failed: {}", e))?;
 
@@ -81,7 +83,7 @@ Ok(ForkResult::Child) => {
 
     chroot(merged.as_str())
         .map_err(|e| format!("chroot failed: {}", e))?;
-    chdir("/")
+    chdir(config.workdir.as_str())
         .map_err(|e| format!("chdir failed: {}", e))?;
 
     let shell = CString::new(config.shell_path)
@@ -106,8 +108,8 @@ Err(e) => Err(format!("fork failed: {}", e)),
 fn cgroup_setting(config: &SandboxConfig) -> Result<(), String> {
     create_dir_all(CGROUP_PATH).map_err(|e| e.to_string())?;
     write(format!("{}/memory.max", CGROUP_PATH), config.memory_limit.clone())
-.map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?;
     write(format!("{}/cgroup.procs", CGROUP_PATH), process::id().to_string())
-    .map_err(|e| e.to_string())?;
+        .map_err(|e| e.to_string())?;
     Ok(())
 }
