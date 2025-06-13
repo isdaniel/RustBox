@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",                 // Or use "cppdbg" for GDB
+            "request": "launch",
+            "name": "Debug Rust",
+            "program": "${workspaceFolder}/target/debug/rustbox",
+            "args": [],
+            "initCommands": [
+                "platform select remote-linux",
+                "platform connect connect://127.0.0.1:12345"
+            ],
+            "cwd": "${workspaceFolder}",
+            "terminal": "integrated",
+            "sourceLanguages": ["rust"]
+        }
+    ]
+}
