@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::Element::Gnome::Boolean;
-use warnings;
 use strict;
 use Gtk3;
 use utf8;
@@ -14,9 +13,9 @@ use base qw(Debconf::Element::Gnome);
 sub init {
 	my $this=shift;
 	my $description=to_Unicode($this->question->description);
-
+	
 	$this->SUPER::init(@_);
-
+	
 	$this->widget(Gtk3::CheckButton->new($description));
 	$this->widget->show;
 	$this->widget->set_active(($this->question->value eq 'true') ? 1 : 0);

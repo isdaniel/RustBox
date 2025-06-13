@@ -1,16 +1,15 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::Element::Noninteractive;
-use warnings;
 use strict;
 use base qw(Debconf::Element);
 
 
 sub visible {
 	my $this=shift;
-
+	
 	return;
 }
 

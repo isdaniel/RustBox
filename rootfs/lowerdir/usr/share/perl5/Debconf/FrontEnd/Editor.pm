@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::FrontEnd::Editor;
-use warnings;
 use strict;
 use Debconf::Encoding q(wrap);
 use Debconf::TmpFile;
@@ -51,7 +50,7 @@ sub go {
 	my $this=shift;
 	my @elements=@{$this->elements};
 	return 1 unless @elements;
-
+	
 	$fh = Debconf::TmpFile::open('.sh');
 
 	$this->comment(gettext("You are using the editor-based debconf frontend to configure your system. See the end of this document for detailed instructions."));
@@ -67,26 +66,26 @@ sub go {
 		Debconf::TmpFile::cleanup();
 		return 1;
 	}
-
+	
 	$this->divider;
 	$this->comment(gettext("The editor-based debconf frontend presents you with one or more text files to edit. This is one such text file. If you are familiar with standard unix configuration files, this file will look familiar to you -- it contains comments interspersed with configuration items. Edit the file, changing any items as necessary, and then save it and exit. At that point, debconf will read the edited file, and use the values you entered to configure the system."));
 	print $fh ("\n");
 	close $fh;
-
+	
 	my $editor=$ENV{EDITOR} || $ENV{VISUAL} || '/usr/bin/editor';
 	system "$editor ".Debconf::TmpFile->filename;
 
 	my %eltname=map { $_->question->name => $_ } @elements;
-	open (my $in, "<", Debconf::TmpFile::filename());
-	while (<$in>) {
+	open (IN, "<".Debconf::TmpFile::filename());
+	while (<IN>) {
 		next if /^\s*#/;
 
 		if (/(.*?)="(.*)"/ && $eltname{$1}) {
 			$eltname{$1}->value($2);
 		}
 	}
-	close $in;
-
+	close IN;
+	
 	Debconf::TmpFile::cleanup();
 
 	return 1;

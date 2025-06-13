@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::Element::Gnome::Password;
-use warnings;
 use strict;
 use Gtk3;
 use utf8;
@@ -28,7 +27,7 @@ sub init {
 
 sub value {
 	my $this=shift;
-
+	
 	my $text = $this->widget->get_chars(0, -1);
 	$text = $this->question->value if $text eq '';
 	return $text;

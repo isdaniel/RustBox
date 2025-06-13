@@ -1,4 +1,6 @@
 /.
+/bin
+/bin/login
 /etc
 /etc/login.defs
 /etc/pam.d
@@ -7,7 +9,6 @@
 /usr/bin
 /usr/bin/faillog
 /usr/bin/lastlog
-/usr/bin/login
 /usr/bin/newgrp
 /usr/sbin
 /usr/sbin/nologin
@@ -140,18 +141,6 @@
 /usr/share/man/tr
 /usr/share/man/tr/man1
 /usr/share/man/tr/man1/login.1.gz
-/usr/share/man/uk
-/usr/share/man/uk/man1
-/usr/share/man/uk/man1/login.1.gz
-/usr/share/man/uk/man1/newgrp.1.gz
-/usr/share/man/uk/man1/sg.1.gz
-/usr/share/man/uk/man5
-/usr/share/man/uk/man5/faillog.5.gz
-/usr/share/man/uk/man5/login.defs.5.gz
-/usr/share/man/uk/man8
-/usr/share/man/uk/man8/faillog.8.gz
-/usr/share/man/uk/man8/lastlog.8.gz
-/usr/share/man/uk/man8/nologin.8.gz
 /usr/share/man/zh_CN
 /usr/share/man/zh_CN/man1
 /usr/share/man/zh_CN/man1/login.1.gz

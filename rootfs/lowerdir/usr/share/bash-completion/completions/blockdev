@@ -12,7 +12,6 @@ _blockdev_module()
 		--setrw
 		--getro
 		--getdiscardzeroes
-		--getdiskseq
 		--getss
 		--getpbsz
 		--getiomin
@@ -39,7 +38,6 @@ _blockdev_module()
 			return 0
 			;;
 	esac
-	compopt -o bashdefault -o default
 	COMPREPLY=( $(compgen -W "${OPTS[*]}" -- $cur) )
 	return 0
 }

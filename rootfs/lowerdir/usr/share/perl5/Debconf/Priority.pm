@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::Priority;
-use warnings;
 use strict;
 use Debconf::Config;
 use base qw(Exporter);
@@ -34,8 +33,7 @@ sub priority_valid {
 
 
 sub priority_list {
-	my @sorted = sort { $priorities{$a} <=> $priorities{$b} } keys %priorities;
-	return @sorted;
+	return sort { $priorities{$a} <=> $priorities{$b} } keys %priorities;
 }
 
 

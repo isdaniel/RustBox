@@ -49,7 +49,7 @@ Choices-pa.UTF-8: ਵਾਰਤਾਲਾਪ, ਲਾਇਨ ਪੜ੍ਹੋ, Gnome,
 Choices-pl.UTF-8: Dialog, Readline, Gnome, Kde, Edytor, Nieinteraktywny
 Choices-pt.UTF-8: Dialog, Readline, Gnome, Kde, Editor, Não-interactivo
 Choices-pt_BR.UTF-8: Dialog, Readline, Gnome, Kde, Editor, Noninteractive
-Choices-ro.UTF-8: Dialog, Linie de comandă interactivă, Gnome, Kde, Editor, Non-interactivă
+Choices-ro.UTF-8: Dialog, Linie interactivă, Gnome, Kde, Editor, Non-interactiv
 Choices-ru.UTF-8: диалоговый, из командной строки, Gnome, Kde, из текстового редактора, пакетный
 Choices-si.UTF-8: සංවාදය, කියවීම් පේළිය, Gnome, Kde, සකසනය, අන්තර්ක්‍රියාකාරී නොවන
 Choices-sk.UTF-8: Dialóg, Readline, Gnome, Kde, Editor, Neinteraktívne
@@ -153,9 +153,9 @@ Description-fa.UTF-8: رابط کاربری مورد استفاده:
  .
  رابط dialog یک رابط کاربری تمام صفحه بر مبنای کاراکتر است، در حالی که readline بیشتر از رابط کاربری متنی استفاده می کند، و gnome و kde رابط های ،رابط کاربری X هستند که میزکارهای مناسبی را در اختیار می گذارند (اما ممکن است هر کدام از محیط های تحت X استفاده شود). ویرایشکر رابط به شما اجازه می دهد تا چیز ها را با ویرایشگر متن مورد علاقه خود ویرایش کنید. رابط های غیر محاوره ای هیچگاه از شما سؤالی نمی پرسند.
 Description-fi.UTF-8: Käytettävä liittymä:
- Debconf yhdenmukaistaa sitä käyttävien pakettien asetuskäyttöliittymän. Voit itse valita mieluisesi liittymän muutamasta vaihtoehdosta.
+ Debconf yhdenmukaistaa sitÃ€ kÃ€yttÃ€vien pakettien asetuskÃ€yttÃ¶liittymÃ€n. Voit itse valita mieluisesi liittymÃ€n muutamasta vaihtoehdosta.
  .
- Valintaikkuna on ruudun täyttävä merkkipohjainen liittymä, kun taas readline on perinteisempi pelkkää tekstiä käyttävä liittymä. Sekä Gnome että KDE ovat nykyaikaisia X-pohjaisia liittymiä. Teksturi käyttää asetusten säätöön lempiteksturiasi. Ei-vuorovaikutteinen liittymä ei koskaan kysy kysymyksiä.
+ Valintaikkuna on ruudun tÃ€yttÃ€vÃ€ merkkipohjainen liittymÃ€, kun taas readline on perinteisempi pelkkÃ€Ã€ tekstiÃ€ kÃ€yttÃ€vÃ€ liittymÃ€. SekÃ€ Gnome ettÃ€ KDE ovat nykyaikaisia X-pohjaisia liittymiÃ€. Teksturi kÃ€yttÃ€Ã€ asetusten sÃ€Ã€tÃ¶Ã¶n lempiteksturiasi. Ei-vuorovaikutteinen liittymÃ€ ei koskaan kysy kysymyksiÃ€.
 Description-fr.UTF-8: Interface à utiliser :
  Les paquets utilisant debconf pour leur configuration ont une interface et une ergonomie communes. Vous pouvez choisir leur interface utilisateur.
  .
@@ -273,9 +273,9 @@ Description-pt_BR.UTF-8: Interface a ser usada:
  .
  A interface dialog é em tela cheia e baseada em texto, enquanto a interface readline usa uma interface mais tradicional de texto puro e as interfaces gnome e kde são interfaces X modernas, se adequando aos respectivos ambientes (mas podem ser usadas em qualquer ambiente X). A interface editor permite que você configure os pacotes usando seu editor de textos favorito. A interface não-interativa ("noninteractive") nunca faz perguntas a você.
 Description-ro.UTF-8: Interfața folosită:
- Pachetele care folosesc «debconf» pentru configurare, sunt asemănătoare în aspect și comportament. Puteți selecta tipul de interfață utilizat de acestea.
+ Pachetele care folosesc debconf pentru configurare, sunt asemănătoare în aspect și comportament. Puteți selecta tipul de interfață utilizat de ele.
  .
- Interfața dialog este o interfață în mod text, pe tot ecranul, în timp ce linia de comandă folosește o interfață în mod text, mai tradițională, și, atât interfața Gnome cât și interfața KDE sunt interfețe moderne în X, care se încadrează în mediile respective (dar pot fi folosite în orice mediu X). Interfața editor vă permite sa configurați lucrurile folosind editorul de text preferat de dvs. Interfața non-interactivă nu vă întreabă niciodată nimic.
+ Interfața dialog este o interfață în mod text, pe tot ecranul, în timp ce linia de comandă folosește o interfață în mod text, mai tradițională, și, atât interfața gnome cât și kde sunt interfețe moderne în X, care se încadrează în mediile respective (dar pot fi folosite în orice mediu X). Interfața editor vă permite sa configurați lucrurile folosind editorul de text preferat de dvs. Interfața non-interactivă nu vă întreabă niciodată nimic.
 Description-ru.UTF-8: Интерфейс настройки пакетов:
  Пакеты, использующие debconf, обладают единообразным интерфейсом настройки. Вы можете выбрать наиболее подходящий.
  .
@@ -405,7 +405,7 @@ Choices-pa.UTF-8: ਨਾਜ਼ੁਕ, ਜਿਆਦਾ, ਮੱਧਮ, ਘੱਟ
 Choices-pl.UTF-8: krytyczny, wysoki, średni, niski
 Choices-pt.UTF-8: crítica, elevada, média, baixa
 Choices-pt_BR.UTF-8: crítica, alta, média, baixa
-Choices-ro.UTF-8: critică, ridicată, medie, scăzută
+Choices-ro.UTF-8: critic, ridicat, mediu, scăzut
 Choices-ru.UTF-8: критический, высокий, средний, низкий
 Choices-si.UTF-8: දරුණු, ඉහළ, මධ්‍යම, අඩු
 Choices-sk.UTF-8: kritická, vysoká, stredná, nízka
@@ -600,14 +600,14 @@ Description-fa.UTF-8: از سوالات با اولویت کمتر از مقدا
  .
  توجه داشته باشید، که هیچ اهمیتی ندارد که چه گزینه ای را انتخاب می کنید، شما می توانید در صورتی که یک بسته را با دستور dpkg-reconfigure مجدداً پیکربندی کردید، تمام سؤال ها را دوباره ببینید.
 Description-fi.UTF-8: Ohita kysymykset, joiden prioriteetti on pienempi kuin:
- Debconf priorisoi esittämänsä kysymykset. Valitse alin prioriteetti, jonka kysymykset haluat nähdä:
-   - "kriittinen" kysyy vain jos järjestelmä voi hajota.
-     Valitse tämä jos olet uusi tai sinulla on kiire.
-   - "tärkeä" on kohtuullisen tärkeille kysymyksille
+ Debconf priorisoi esittÃ€mÃ€nsÃ€ kysymykset. Valitse alin prioriteetti, jonka kysymykset haluat nÃ€hdÃ€:
+   - "kriittinen" kysyy vain jos jÃ€rjestelmÃ€ voi hajota.
+     Valitse tÃ€mÃ€ jos olet uusi tai sinulla on kiire.
+   - "tÃ€rkeÃ€" on kohtuullisen tÃ€rkeille kysymyksille
    - "tavallinen" on normaaleille kysymyksille
-   - "vähäpätöinen" on säätöfriikeille, jotka haluavat nähdä kaiken
+   - "vÃ€hÃ€pÃ€tÃ¶inen" on sÃ€Ã€tÃ¶friikeille, jotka haluavat nÃ€hdÃ€ kaiken
  .
- Huomaa, että riippumatta tässä valitsemastasi tasosta näet kaikki kysymykset uudelleensäätämällä paketin "dpkg-reconfigure"-ohjelmalla.
+ Huomaa, ettÃ€ riippumatta tÃ€ssÃ€ valitsemastasi tasosta nÃ€et kaikki kysymykset uudelleensÃ€Ã€tÃ€mÃ€llÃ€ paketin "dpkg-reconfigure"-ohjelmalla.
 Description-fr.UTF-8: Ignorer les questions de priorité inférieure à :
  Debconf gère les priorités des questions qu'il vous pose. Choisissez la priorité la plus basse des questions que vous souhaitez voir :
    - « critique » n'affiche que les questions pouvant casser le système.
@@ -870,15 +870,15 @@ Description-pt_BR.UTF-8: Ignorar perguntas com uma prioridade menor que:
    - 'baixa' é para malucos por controle que desejam ver tudo
  .
  Note que, independentemente do que você escolher aqui, você poderá ver todas as perguntas caso você reconfigure um pacote com o comando dpkg-reconfigure.
-Description-ro.UTF-8: Ignoră întrebările cu prioritatea mai mică decât cea:
- «debconf» prioritizează întrebările pe care vi le adresează. Alegeți cea mai mică prioritate a întrebărilor pe care doriți să le vedeți:
-   - „critică” afișează întrebări doar când sistemul ar putea să se strice.
-      Alegeți-o dacă sunteți începător, sau vă grăbiți;
-   - „ridicată” este pentru întrebări destul de importante;
-   - „medie” este pentru întrebări normale;
-   - „scăzută” este pentru obsedații de control care vor să vadă tot.
+Description-ro.UTF-8: Ignoră întrebările cu prioritatea mai mică decât:
+ Debconf prioritizează întrebările pe care vi le adresează. Alegeți cea mai  mică prioritate a întrebărilor pe care doriți să le vedeți:
+   - 'critic' apare doar când sistemul se poate să se strice.
+      Alegeți-o dacă sunteți începător, sau vă grăbiți.
+   - 'ridicat' este pentru întrebări destul de importante
+   - 'mediu' este pentru întrebări normale
+   - 'scăzut' este pentru obsedații de control care vor să vadă tot
  .
- Rețineți că indiferent ce nivel alegeți aici, veți putea să vedeți fiecare întrebare dacă reconfigurați un pachet cu «dpkg-reconfigure».
+ A se nota că indiferent ce nivel alegeți aici, veți putea să vedeți fiecare întrebare dacă reconfigurați un pachet cu dpkg-reconfigure.
 Description-ru.UTF-8: Не задавать вопросы с приоритетом менее чем:
  Debconf различает степень важности задаваемых вам вопросов. Выберите наименьший уровень вопросов, которые хотите видеть: 
    - «критический» — Выдает только вопросы, критичные для работы системы.

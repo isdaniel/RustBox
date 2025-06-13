@@ -41,7 +41,6 @@ _wipefs_module()
 				--force
 				--noheadings
 				--json
-				--lock
 				--no-act
 				--offset
 				--output
@@ -55,7 +54,6 @@ _wipefs_module()
 			return 0
 			;;
 	esac
-	compopt -o bashdefault -o default
 	COMPREPLY=( $(compgen -W "$(lsblk -pnro name)" -- $cur) )
 	return 0
 }

@@ -4,7 +4,7 @@ use 5.006;
 use strict;
 our($VERSION, @ISA, @EXPORT, @EXPORT_OK);
 
-$VERSION = "2.05";
+$VERSION = "2.03";
 
 require IO::File;
 @ISA = qw(IO::File);

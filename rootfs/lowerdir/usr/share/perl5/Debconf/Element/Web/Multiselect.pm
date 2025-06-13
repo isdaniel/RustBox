@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::Element::Web::Multiselect;
-use warnings;
 use strict;
 use base qw(Debconf::Element::Multiselect);
 
@@ -29,7 +28,7 @@ sub show {
 		}
 	}
 	$_.="</select>\n";
-
+	
 	return $_;
 }
 
@@ -44,7 +43,7 @@ sub value {
 	$this->question->template->i18n('');
 	my @choices=$this->question->choices_split;
 	$this->question->template->i18n(1);
-
+	
 	$this->SUPER::value(join(', ',  $this->order_values(map { $choices[$_] } @values)));
 }
 

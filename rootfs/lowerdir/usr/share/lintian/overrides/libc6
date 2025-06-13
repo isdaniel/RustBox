@@ -1,13 +1,13 @@
+# libpthread must be stripped specially; GDB needs the non-dynamic 
+# symbol table in order to load the thread debugging library.
+libc6: unstripped-binary-or-object */libpthread-2.31.so
+
 # ld.so must be executable, otherwise the system will not work
-shared-library-is-executable 0755 [*/ld*.so.*]
+libc6: shlib-with-executable-bit */ld-2.31.so 0755
 
 # It is normal that the ELF dynamic linker does not need any other 
 # library
-shared-library-lacks-prerequisites */ld*.so.*
+libc6: shared-lib-without-dependency-information */ld-2.31.so
 
 # dependency on debconf is not needed, as glibc has a fallback to tty 
-missing-debconf-dependency-for-preinst
-
-# The call to systemctl in postinst is not about restarting services,
-# but restarting systemd.
-maintainer-script-calls-systemctl
+libc6: missing-debconf-dependency-for-preinst

@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::DbDriver::PackageDir;
-use warnings;
 use strict;
 use Debconf::Log qw(:all);
 use IO::File;
@@ -34,12 +33,12 @@ sub loadfile {
 
 	return if $this->{_loaded}->{$file};
 	$this->{_loaded}->{$file}=1;
-
+	
 	debug "db $this->{name}" => "loading $file";
 	return unless -e $file;
 
 	my $fh=IO::File->new;
-	open($fh, "<", $file) or $this->error("$file: $!");
+	open($fh, $file) or $this->error("$file: $!");
 	my @item = $this->{format}->read($fh);
 	while (@item) {
 		$this->cacheadd(@item);
@@ -71,7 +70,7 @@ sub filename {
 
 sub iterator {
 	my $this=shift;
-
+	
 	my $handle;
 	opendir($handle, $this->{directory}) ||
 		$this->error("opendir: $!");
@@ -92,12 +91,12 @@ sub exists {
 	my $this=shift;
 	my $name=shift;
 	my $incache=$this->Debconf::DbDriver::Cache::exists($name);
-	return $incache if not defined $incache or $incache;
+	return $incache if (!defined $incache or $incache);
 	my $file=$this->{directory}.'/'.$this->filename($name);
 	return unless -e $file;
 
 	$this->load($name);
-
+	
 	return $this->Debconf::DbDriver::Cache::exists($name);
 }
 
@@ -111,7 +110,7 @@ sub shutdown {
 	foreach my $item (keys %{$this->{cache}}) {
 		my $file=$this->filename($item);
 		$files{$file}++;
-
+		
 		if (! defined $this->{cache}->{$item}) {
 			$killfiles{$file}++;
 			delete $this->{cache}->{$item};
@@ -140,7 +139,7 @@ sub shutdown {
 		elsif ($dirtyfiles{$file}) {
 			debug "db $this->{name}" => "saving $file";
 			my $filename=$this->{directory}."/".$file;
-
+		
 			sysopen(my $fh, $filename."-new",
 			                O_WRONLY|O_TRUNC|O_CREAT,$this->{mode}) or
 				$this->error("could not write $filename-new: $!");
@@ -162,7 +161,7 @@ sub shutdown {
 				$this->error("rename failed: $!");
 		}
 	}
-
+	
 	$this->SUPER::shutdown(@_);
 	return 1;
 }

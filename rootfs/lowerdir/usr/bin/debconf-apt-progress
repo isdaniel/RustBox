@@ -1,8 +1,7 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
-use warnings;
 use strict;
 use POSIX;
 use Fcntl;
@@ -15,16 +14,10 @@ my $dlwaypoint=15;
 my ($logfile, $logstderr);
 my $had_frontend;
 
-our ($status_read, $status_write);
-our ($command_read, $command_write);
-our ($debconf_command_read, $debconf_command_write);
-our ($debconf_reply_read, $debconf_reply_write);
-our $apt_log;
-
 sub checkopen (@) {
 	my $file = $_[0];
 	my $fd = POSIX::open($file, &POSIX::O_RDONLY);
-	defined $fd or die "$0: can't open $file: $!\n";
+	defined $fd or die "$0: can't open $_[0]: $!\n";
 	return $fd;
 }
 
@@ -43,13 +36,13 @@ sub checkdup2 ($$) {
 		or die "$0: can't dup fd $oldfd to $newfd: $!\n";
 }
 
-sub nocloexec ($) {
+sub nocloexec (*) {
 	my $fh = shift;
 	my $flags = fcntl($fh, F_GETFD, 0);
 	fcntl($fh, F_SETFD, $flags & ~FD_CLOEXEC);
 }
 
-sub nonblock ($) {
+sub nonblock (*) {
 	my $fh = shift;
 	my $flags = fcntl($fh, F_GETFL, 0);
 	fcntl($fh, F_SETFL, $flags | O_NONBLOCK);
@@ -103,24 +96,24 @@ sub passthrough (@) {
 
 	defined(my $pid = fork) or die "$0: can't fork: $!\n";
 	if (!$pid) {
-		close $status_read;
-		close $command_write;
-		close $debconf_command_read;
-		close $debconf_reply_write;
+		close STATUS_READ;
+		close COMMAND_WRITE;
+		close DEBCONF_COMMAND_READ;
+		close DEBCONF_REPLY_WRITE;
 		$^F = 6; # avoid close-on-exec
-		if (fileno($command_read) != 0) {
-			checkdup2(fileno($command_read), 0);
-			close $command_read;
+		if (fileno(COMMAND_READ) != 0) {
+			checkdup2(fileno(COMMAND_READ), 0);
+			close COMMAND_READ;
 		}
-		if (fileno($apt_log) != 1) {
+		if (fileno(APT_LOG) != 1) {
 			checkclose(1);
-			checkdup2(fileno($apt_log), 1);
+			checkdup2(fileno(APT_LOG), 1);
 		}
-		if (fileno($apt_log) != 2) {
+		if (fileno(APT_LOG) != 2) {
 			checkclose(2);
-			checkdup2(fileno($apt_log), 2);
+			checkdup2(fileno(APT_LOG), 2);
 		}
-		close $apt_log;
+		close APT_LOG;
 		delete $ENV{DEBIAN_HAS_FRONTEND};
 		delete $ENV{DEBCONF_REDIR};
 		delete $ENV{DEBCONF_SYSTEMRC};
@@ -134,13 +127,13 @@ sub passthrough (@) {
 			$ENV{DEBCONF_DB_REPLACE} = 'configdb';
 			$ENV{DEBCONF_DB_OVERRIDE} = 'Pipe{infd:none outfd:none}';
 		}
-		exec @_ or die "can't exec $_[0]: $!";
+		exec @_;
 	}
 
-	close $status_write;
-	close $command_read;
-	close $debconf_command_write;
-	close $debconf_reply_read;
+	close STATUS_WRITE;
+	close COMMAND_READ;
+	close DEBCONF_COMMAND_WRITE;
+	close DEBCONF_REPLY_READ;
 	return $pid;
 }
 
@@ -165,8 +158,7 @@ sub handle_status ($$$) {
 			'critical', 'debconf-apt-progress/media-change');
 		$ret[0] == 0 or die "Can't display media change request!\n";
 		Debconf::Client::ConfModule::go();
-		print $command_write "\n" ||
-			die "can't talk to command fd: $!";
+		print COMMAND_WRITE "\n" || die "can't talk to command fd: $!";
 		return;
 	}
 	else {
@@ -197,8 +189,8 @@ sub handle_debconf_command ($) {
 	print "$line\n" || die "can't write to stdout: $!";
 	my $ret = <STDIN>;
 	chomp $ret;
-	print $debconf_reply_write "$ret\n" ||
-		die "can't write to \$debconf_reply_write: $!";
+	print DEBCONF_REPLY_WRITE "$ret\n" ||
+		die "can't write to DEBCONF_REPLY_WRITE: $!";
 }
 
 my $pid;
@@ -206,11 +198,11 @@ sub run_progress ($$@) {
 	my $from = shift;
 	my $to = shift;
 	my $command = shift;
-	local ($status_read, $status_write);
-	local ($command_read, $command_write);
-	local ($debconf_command_read, $debconf_command_write);
-	local ($debconf_reply_read, $debconf_reply_write);
-	local $apt_log;
+	local (*STATUS_READ, *STATUS_WRITE);
+	local (*COMMAND_READ, *COMMAND_WRITE);
+	local (*DEBCONF_COMMAND_READ, *DEBCONF_COMMAND_WRITE);
+	local (*DEBCONF_REPLY_READ, *DEBCONF_REPLY_WRITE);
+	local *APT_LOG;
 	use IO::Handle;
 
 	if ($progress) {
@@ -224,46 +216,46 @@ sub run_progress ($$@) {
 
 	reservefds(4, 5, 6);
 
-	pipe $status_read, $status_write
+	pipe STATUS_READ, STATUS_WRITE
 		or die "$0: can't create status pipe: $!";
-	nonblock($status_read);
-	checkdup2(fileno($status_write), 4);
-	open $status_write, '>&=', 4
-		or die "$0: can't reopen \$status_write as fd 4: $!";
-	nocloexec($status_write);
+	nonblock(\*STATUS_READ);
+	checkdup2(fileno(STATUS_WRITE), 4);
+	open STATUS_WRITE, '>&=4'
+		or die "$0: can't reopen STATUS_WRITE as fd 4: $!";
+	nocloexec(\*STATUS_WRITE);
 
-	pipe $command_read, $command_write
+	pipe COMMAND_READ, COMMAND_WRITE
 		or die "$0: can't create command pipe: $!";
-	nocloexec($command_read);
-	$command_write->autoflush(1);
+	nocloexec(\*COMMAND_READ);
+	COMMAND_WRITE->autoflush(1);
 
-	pipe $debconf_command_read, $debconf_command_write
+	pipe DEBCONF_COMMAND_READ, DEBCONF_COMMAND_WRITE
 		or die "$0: can't create debconf command pipe: $!";
-	nonblock($debconf_command_read);
-	checkdup2(fileno($debconf_command_write), 6);
-	open $debconf_command_write, '>&=', 6
-		or die "$0: can't reopen \$debconf_command_write as fd 6: $!";
-	nocloexec($debconf_command_write);
+	nonblock(\*DEBCONF_COMMAND_READ);
+	checkdup2(fileno(DEBCONF_COMMAND_WRITE), 6);
+	open DEBCONF_COMMAND_WRITE, '>&=6'
+		or die "$0: can't reopen DEBCONF_COMMAND_WRITE as fd 6: $!";
+	nocloexec(\*DEBCONF_COMMAND_WRITE);
 
-	pipe $debconf_reply_read, $debconf_reply_write
+	pipe DEBCONF_REPLY_READ, DEBCONF_REPLY_WRITE
 		or die "$0: can't create debconf reply pipe: $!";
-	checkdup2(fileno($debconf_reply_read), 5);
-	open $debconf_reply_read, '<&=', 5
-		or die "$0: can't reopen \$debconf_reply_read as fd 5: $!";
-	nocloexec($debconf_reply_read);
-	$debconf_reply_write->autoflush(1);
+	checkdup2(fileno(DEBCONF_REPLY_READ), 5);
+	open DEBCONF_REPLY_READ, '<&=5'
+		or die "$0: can't reopen DEBCONF_REPLY_READ as fd 5: $!";
+	nocloexec(\*DEBCONF_REPLY_READ);
+	DEBCONF_REPLY_WRITE->autoflush(1);
 
 	if (defined $logfile) {
-		open $apt_log, '>>', $logfile
+		open APT_LOG, '>>', $logfile
 			or die "$0: can't open $logfile: $!";
 	} elsif ($logstderr) {
-		open $apt_log, '>&', \*STDERR
+		open APT_LOG, '>&STDERR'
 			or die "$0: can't duplicate stderr: $!";
 	} else {
-		open $apt_log, '>', '/dev/null'
+		open APT_LOG, '>', '/dev/null'
 			or die "$0: can't open /dev/null: $!";
 	}
-	nocloexec($apt_log);
+	nocloexec(\*APT_LOG);
 
 	$pid = passthrough $command,
 		'-o', 'APT::Status-Fd=4',
@@ -279,8 +271,8 @@ sub run_progress ($$@) {
 	while (not $status_eof) {
 		my $rin = '';
 		my $rout;
-		vec($rin, fileno($status_read), 1) = 1;
-		vec($rin, fileno($debconf_command_read), 1) = 1
+		vec($rin, fileno(STATUS_READ), 1) = 1;
+		vec($rin, fileno(DEBCONF_COMMAND_READ), 1) = 1
 			unless $debconf_command_eof;
 		my $sel = select($rout = $rin, undef, undef, undef);
 		if ($sel < 0) {
@@ -288,15 +280,15 @@ sub run_progress ($$@) {
 			die "$0: select failed: $!";
 		}
 
-		if (vec($rout, fileno($status_read), 1) == 1) {
+		if (vec($rout, fileno(STATUS_READ), 1) == 1) {
 			while (1) {
-				my $r = sysread($status_read, $status_buf,
-						4096, length $status_buf);
+				my $r = sysread(STATUS_READ, $status_buf, 4096,
+						length $status_buf);
 				if (not defined $r) {
 					next if $! == &POSIX::EINTR;
 					last if $! == &POSIX::EAGAIN or
 						$! == &POSIX::EWOULDBLOCK;
-					die "$0: read \$status_read failed: $!";
+					die "$0: read STATUS_READ failed: $!";
 				}
 				elsif ($r == 0) {
 					if ($status_buf ne '' and
@@ -317,17 +309,16 @@ sub run_progress ($$@) {
 			}
 		}
 
-		if (vec($rout, fileno($debconf_command_read), 1) == 1) {
+		if (vec($rout, fileno(DEBCONF_COMMAND_READ), 1) == 1) {
 			while (1) {
-				my $r = sysread($debconf_command_read,
+				my $r = sysread(DEBCONF_COMMAND_READ,
 						$debconf_command_buf, 4096,
 						length $debconf_command_buf);
 				if (not defined $r) {
 					next if $! == &POSIX::EINTR;
 					last if $! == &POSIX::EAGAIN or
 						$! == &POSIX::EWOULDBLOCK;
-					die "$0: read " .
-					    "\$debconf_command_read " .
+					die "$0: read DEBCONF_COMMAND_READ " .
 					    "failed: $!";
 				}
 				elsif ($r == 0) {

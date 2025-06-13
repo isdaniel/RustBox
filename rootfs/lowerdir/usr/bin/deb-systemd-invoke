@@ -35,15 +35,14 @@ deb-systemd-invoke - wrapper around systemctl, respecting policy-rc.d
 
 =head1 SYNOPSIS
 
-B<deb-systemd-invoke> [B<--user>] start|stop|restart S<I<unit file> ...>
-B<deb-systemd-invoke> [B<--user>] [B<--no-dbus>] daemon-reload|daemon-reexec
+B<deb-systemd-invoke> start|stop|restart S<I<unit file> ...>
 
 =head1 DESCRIPTION
 
 B<deb-systemd-invoke> is a Debian-specific helper script which asks
 /usr/sbin/policy-rc.d before performing a systemctl call.
 
-B<deb-systemd-invoke> is intended to be used from maintscripts to manage
+B<deb-systemd-invoke> is intended to be used from maintscripts to start
 systemd unit files. It is specifically NOT intended to be used interactively by
 users. Instead, users should run systemd and use systemctl, or not bother about
 the systemd enabled state in case they are not running systemd.
@@ -52,26 +51,13 @@ the systemd enabled state in case they are not running systemd.
 
 use strict;
 use warnings;
-use Getopt::Long; # in core since Perl 5
 
 if (@ARGV < 2) {
-    print STDERR "Syntax: $0 <action> [<unit file> [<unit file> ...]]\n";
+    print STDERR "Syntax: $0 <action> <unit file> [<unit file> ...]\n";
     exit 1;
 }
 
-my $is_system = 1;
-my $use_dbus = 1;
-my @instances = ();
-my $result = GetOptions(
-    "user" => sub { $is_system = 0; },
-    "system" => sub { $is_system = 1; }, # default
-    "no-dbus" => sub { $use_dbus = 0; },
-);
-
 my $policyhelper = '/usr/sbin/policy-rc.d';
-if (length $ENV{DPKG_ROOT}) {
-    $policyhelper = $ENV{DPKG_ROOT} . $policyhelper;
-}
 my @units = @ARGV;
 my $action = shift @units;
 if (-x $policyhelper) {
@@ -91,23 +77,6 @@ if (-x $policyhelper) {
     }
 }
 
-if (!$is_system) {
-    # '--machine <ID>@' was added in v250 and v249.10, before that we can't talk to arbitrary user instances
-    my $systemctl_version = `systemctl --version --quiet | sed -n -r "s/systemd ([0-9]+) \\(.*/\\1/p"`;
-    chomp ($systemctl_version);
-    if (system('dpkg', '--compare-versions', $systemctl_version, 'ge', '249') != 0) {
-            print STDERR "systemctl version $systemctl_version does not support acting on user instance, skipping\n";
-            exit 0;
-    }
-
-    # Each user instance of the manager has a corresponding user@<id<.service unit.
-    # Get the full list of IDs, so that we can talk to each user instance to start/stop
-    # user units.
-    @instances = `systemctl --no-legend --quiet list-units 'user@*' | sed -n -r 's/.*user@([0-9]+).service.*/\\1/p'`;
-} else {
-    push @instances, 'system';
-}
-
 # If the job is disabled and is not currently running, the job is not started or restarted.
 # However, if the job is disabled but has been forced into the running state, we *do* stop
 # and restart it since this is expected behaviour for the admin who forced the start.
@@ -115,73 +84,28 @@ if (!$is_system) {
 if ($action eq "start" || $action eq "restart") {
     my $global_exit_code = 0;
     my @start_units = ();
-
-    for my $instance (@instances) {
-        my @instance_args = ();
-
-        if ($instance eq 'system') {
-            push @instance_args, '--system';
-        } else {
-            chomp ($instance);
-            push @instance_args, '--user', '--machine', "$instance@";
+    for my $unit (@units) {
+        my $unit_installed = 0;
+        my $enabled_output = `/bin/systemctl is-enabled -- '$unit'`;
+        # matching enabled and enabled-runtime as an installed non static unit
+        if ($enabled_output =~ /enabled/) {
+            $unit_installed = 1;
         }
-
-        for my $unit (@units) {
-            my $unit_installed = 0;
-            my $enabled_output = `systemctl @instance_args is-enabled -- '$unit'`;
-            # matching enabled and enabled-runtime as an installed non static unit
-            if ($enabled_output =~ /enabled/) {
-                $unit_installed = 1;
-            }
-            system('systemctl', @instance_args, '--quiet', 'is-active', '--', $unit);
-            my $unit_active = $?>>8 == 0 ? 1 : 0;
-            if (!$unit_installed && $action eq "start") {
-                print STDERR "$unit is a disabled or a static unit, not starting it.\n";
-            } elsif (!$unit_installed && !$unit_active && $action eq "restart") {
-                print STDERR "$unit is a disabled or a static unit not running, not starting it.\n";
-            }
-            else {
-                push @start_units, $unit;
-            }
+        system('/bin/systemctl', '--quiet', 'is-active', '--', $unit);
+        my $unit_active = $?>>8 == 0 ? 1 : 0;
+        if (!$unit_installed && $action eq "start") {
+            print STDERR "$unit is a disabled or a static unit, not starting it.\n";
+        } elsif (!$unit_installed && !$unit_active && $action eq "restart") {
+            print STDERR "$unit is a disabled or a static unit not running, not starting it.\n";
         }
-        if (@start_units) {
-            system('systemctl', '--quiet', @instance_args, $action, @start_units) == 0 or die("Could not execute systemctl: $!");
+        else {
+            push @start_units, $unit;
         }
     }
-    exit(0);
-} elsif ($action eq "stop" && !$is_system) {
-    my $global_exit_code = 0;
-
-    for my $instance (@instances) {
-        chomp ($instance);
-        system('systemctl', '--quiet', '--user', '--machine', "$instance@", $action, @units);
+    if (@start_units) {
+        exec('/bin/systemctl', $action, @start_units) or die("Could not execute systemctl: $!");
     }
-    exit(0);
-} elsif (($action eq "daemon-reload" || $action eq "daemon-reexec") && !$is_system && $use_dbus) {
-    my $global_exit_code = 0;
-
-    for my $instance (@instances) {
-        chomp ($instance);
-        system('systemctl', '--quiet', '--user', '--machine', "$instance@", $action);
-    }
-    exit(0);
-} elsif (($action eq "daemon-reload" || $action eq "daemon-reexec") && !$use_dbus) {
-    my $global_exit_code = 0;
-    my $signal;
-
-    if ($action eq "daemon-reload") {
-        $signal = 'SIGHUP';
-    } else {
-        $signal = 'SIGRTMIN+25';
-    }
-
-    if ($is_system) {
-        system('kill', '-s', $signal, '1');
-    } else {
-        system('systemctl', '--quiet', 'kill', '--kill-whom=main', '--signal', $signal, 'user@*.service');
-    }
-
     exit(0);
 } else {
-    exec('systemctl', @ARGV);
+    exec '/bin/systemctl', @ARGV;
 }

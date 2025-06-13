@@ -1,8 +1,8 @@
 /.
+/lib
+/lib/x86_64-linux-gnu
+/lib/x86_64-linux-gnu/libgcc_s.so.1
 /usr
-/usr/lib
-/usr/lib/x86_64-linux-gnu
-/usr/lib/x86_64-linux-gnu/libgcc_s.so.1
 /usr/share
 /usr/share/doc
 /usr/share/lintian

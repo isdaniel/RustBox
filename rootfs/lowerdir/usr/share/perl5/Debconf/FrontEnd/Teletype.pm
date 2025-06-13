@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::FrontEnd::Teletype;
-use warnings;
 use strict;
 use Debconf::Encoding qw(width wrap);
 use Debconf::Gettext;
@@ -23,7 +22,7 @@ sub init {
 sub display {
 	my $this=shift;
 	my $text=shift;
-
+	
 	$Debconf::Encoding::columns=$this->screenwidth;
 	$this->display_nowrap(wrap('','',$text));
 }
@@ -37,7 +36,7 @@ sub display_nowrap {
 
 	my @lines=split(/\n/, $text);
 	push @lines, "" if $text=~/\n$/;
-
+	
 	my $title=$this->title;
 	if (length $title) {
 		unshift @lines, $title, ('-' x width $title), '';

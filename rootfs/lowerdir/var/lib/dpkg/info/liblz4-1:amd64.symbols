@@ -9,11 +9,8 @@ liblz4.so.1 liblz4-1 #MINVER#
  LZ4F_compressUpdate@Base 0.0~r127
  LZ4F_compressionLevel_max@Base 1.8.0
  LZ4F_createCDict@Base 1.8.1.2
- LZ4F_createCDict_advanced@Base 1.9.4
  LZ4F_createCompressionContext@Base 0.0~r127
- LZ4F_createCompressionContext_advanced@Base 1.9.4
  LZ4F_createDecompressionContext@Base 0.0~r127
- LZ4F_createDecompressionContext_advanced@Base 1.9.4
  LZ4F_decompress@Base 0.0~r127
  LZ4F_decompress_usingDict@Base 1.8.1.2
  LZ4F_flush@Base 0.0~r127
@@ -25,16 +22,8 @@ liblz4.so.1 liblz4-1 #MINVER#
  LZ4F_getErrorName@Base 0.0~r127
  LZ4F_getFrameInfo@Base 0.0~r127
  LZ4F_getVersion@Base 1.7.5
- LZ4F_headerSize@Base 1.9.3
  LZ4F_isError@Base 0.0~r127
- LZ4F_read@Base 1.9.4
- LZ4F_readClose@Base 1.9.4
- LZ4F_readOpen@Base 1.9.4
  LZ4F_resetDecompressionContext@Base 1.8.0
- LZ4F_uncompressedUpdate@Base 1.9.4
- LZ4F_write@Base 1.9.4
- LZ4F_writeClose@Base 1.9.4
- LZ4F_writeOpen@Base 1.9.4
  LZ4_compress@Base 0.0~r113
  LZ4_compressBound@Base 0.0~r114
  LZ4_compressHC2@Base 0.0~r113
@@ -77,7 +66,6 @@ liblz4.so.1 liblz4-1 #MINVER#
  LZ4_decompress_safe@Base 0.0~r113
  LZ4_decompress_safe_continue@Base 0.0~r119
  LZ4_decompress_safe_partial@Base 0.0~r113
- LZ4_decompress_safe_partial_usingDict@Base 1.9.4
  LZ4_decompress_safe_usingDict@Base 0.0~r119
  LZ4_decompress_safe_withPrefix64k@Base 0.0~r113
  LZ4_freeHC@Base 0.0~r113

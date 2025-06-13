@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::Element::Editor::Multiselect;
-use warnings;
 use strict;
 use Debconf::Gettext;
 use base qw(Debconf::Element::Multiselect);
@@ -30,7 +29,7 @@ sub value {
 	my @values=split(',\s+', shift);
 
 	my %valid=map { $_ => 1 } $this->question->choices_split;
-
+	
 	$this->SUPER::value(join(', ', $this->order_values(
 			map { $this->translate_to_C($_) }
 			grep { $valid{$_} } @values)));

@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::Template::Transient;
-use warnings;
 use strict;
 use base 'Debconf::Template';
 use fields qw(_fields);
@@ -13,7 +12,7 @@ use fields qw(_fields);
 sub new {
 	my $this=shift;
 	my $template=shift;
-
+	
 	unless (ref $this) {
 		$this = fields::new($this);
 	}
@@ -34,7 +33,7 @@ sub fields {
 	return keys %{$this->{_fields}};
 }
 
-
+                
 sub clearall {
 	my $this=shift;
 
@@ -54,7 +53,7 @@ sub clearall {
 			my $this=shift;
 
 			return $this->{_fields}->{$field}=shift if @_;
-
+		
 			if ($Debconf::Template::i18n && @langs) {
 				foreach my $lang (@langs) {
 					return $this->{_fields}->{$field.'-'.lc($lang)}

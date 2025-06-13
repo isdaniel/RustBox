@@ -49,7 +49,7 @@ print_help() {
 }
 
 print_version() {
-	echo "e2scrub 1.47.0 (5-Feb-2023)"
+	echo "e2scrub 1.45.5 (07-Jan-2020)"
 }
 
 exitcode() {
@@ -164,7 +164,7 @@ lvm_vars="$(lvs --nameprefixes -o name,vgname,lv_role --noheadings "${dev}" 2> /
 eval "${lvm_vars}"
 if [ -z "${LVM2_VG_NAME}" ] || [ -z "${LVM2_LV_NAME}" ] ||
    echo "${LVM2_LV_ROLE}" | grep -q "snapshot"; then
-	echo "${arg}: Not connected to an LVM logical volume."
+	echo "${arg}: Not connnected to an LVM logical volume."
 	print_help
 	exitcode 16
 fi

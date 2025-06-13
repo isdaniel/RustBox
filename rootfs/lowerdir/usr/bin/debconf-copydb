@@ -1,8 +1,7 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
-use warnings;
 use strict;
 use Getopt::Long;
 use Debconf::Log qw{:all};
@@ -28,7 +27,7 @@ sub config {
 	$field=~tr/-/_/;
 	$field=lc($field);
 	die "Parse error: \"$_[1]\"" unless defined $field and length $field;
-
+	
 	if ($field eq 'name') {
 		if ($config{name}) {
 			Debconf::Db->makedriver(%config);
@@ -68,7 +67,8 @@ while (my $item=$i->iterate) {
 
 	if (defined $owner_pattern) {
 		my $fit_owner = 0;
-		foreach my $owner ($src->owners($item)){
+		my $owner;
+		foreach $owner ($src->owners($item)){
 			$fit_owner = 1 if $owner =~ /$owner_pattern/;
 		}
 		next unless $fit_owner;
@@ -78,4 +78,5 @@ while (my $item=$i->iterate) {
 }
 
 $copier->shutdown;
+
 

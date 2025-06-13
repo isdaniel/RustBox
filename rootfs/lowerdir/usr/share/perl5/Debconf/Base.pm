@@ -1,11 +1,10 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::Base;
-use warnings;
-use strict;
 use Debconf::Log ':all';
+use strict;
 
 
 sub new {

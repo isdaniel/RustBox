@@ -1,4 +1,4 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 
 =head1 NAME
 
@@ -67,7 +67,6 @@ L<debconf-devel(7)>, L<debconf(7)>
 
 =cut
 
-use warnings;
 use strict;
 use Debconf::Db;
 use Debconf::AutoSelect qw(:all);

@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::FrontEnd::Dialog;
-use warnings;
 use strict;
 use Debconf::Gettext;
 use Debconf::Priority;
@@ -24,8 +23,8 @@ sub init {
 
 	delete $ENV{POSIXLY_CORRECT} if exists $ENV{POSIXLY_CORRECT};
 	delete $ENV{POSIX_ME_HARDER} if exists $ENV{POSIX_ME_HARDER};
-
-	if (! exists $ENV{TERM} || ! defined $ENV{TERM} || $ENV{TERM} eq '') {
+	
+	if (! exists $ENV{TERM} || ! defined $ENV{TERM} || $ENV{TERM} eq '') { 
 		die gettext("TERM is not set, so the dialog frontend is not usable.")."\n";
 	}
 	elsif ($ENV{TERM} =~ /emacs/i) {
@@ -34,14 +33,13 @@ sub init {
 	elsif ($ENV{TERM} eq 'dumb' || $ENV{TERM} eq 'unknown') {
 		die gettext("Dialog frontend will not work on a dumb terminal, an emacs shell buffer, or without a controlling terminal.")."\n";
 	}
-
+	
 	$this->interactive(1);
 	$this->capb('backup');
 
-	if (Debconf::Path::find("whiptail") &&
+	if (Debconf::Path::find("whiptail") && 
 	    (! defined $ENV{DEBCONF_FORCE_DIALOG} || ! Debconf::Path::find("dialog")) &&
-	    (! defined $ENV{DEBCONF_FORCE_XDIALOG} || ! Debconf::Path::find("Xdialog")) &&
-	    system('whiptail --version >/dev/null 2>&1') == 0) {
+	    (! defined $ENV{DEBCONF_FORCE_XDIALOG} || ! Debconf::Path::find("Xdialog"))) {
 		$this->program('whiptail');
 		$this->dashsep('--');
 		$this->borderwidth(5);
@@ -53,10 +51,9 @@ sub init {
 		$this->hasoutputfd(1);
 	}
 	elsif (Debconf::Path::find("dialog") &&
-	       (! defined $ENV{DEBCONF_FORCE_XDIALOG} || ! Debconf::Path::find("Xdialog")) &&
-	       system('dialog --version >/dev/null 2>&1') == 0) {
+	       (! defined $ENV{DEBCONF_FORCE_XDIALOG} || ! Debconf::Path::find("Xdialog"))) {
 		$this->program('dialog');
-		$this->dashsep(''); # dialog does not need (or support)
+		$this->dashsep(''); # dialog does not need (or support) 
 		$this->borderwidth(7);
 		$this->borderheight(6);
 		$this->spacer(0);
@@ -88,17 +85,17 @@ sub init {
 sub sizetext {
 	my $this=shift;
 	my $text=shift;
-
+	
 	$columns = $this->screenwidth - $this->borderwidth - $this->columnspacer;
 	$text=wrap('', '', $text);
 	my @lines=split(/\n/, $text);
-
+	
 	my $window_columns=width($this->title) + $this->titlespacer;
 	map {
 		my $w=width($_);
 		$window_columns = $w if $w > $window_columns;
 	} @lines;
-
+	
 	return $text, $#lines + 1 + $this->borderheight,
 	       $window_columns + $this->borderwidth;
 }
@@ -145,7 +142,7 @@ sub showtext {
 		}
 		else {
 			my $fh=Debconf::TmpFile::open();
-			print $fh join("\n", map { &hide_escape } @lines);
+			print $fh join("\n", map &hide_escape, @lines);
 			close $fh;
 			@args=("--textbox", Debconf::TmpFile::filename());
 		}
@@ -170,12 +167,12 @@ sub makeprompt {
 		$question->extended_description."\n\n".
 		$question->description
 	);
-
+	
 	if ($lines > $freelines) {
 		$this->showtext($question, $question->extended_description);
 		($text, $lines, $columns)=$this->sizetext($question->description);
 	}
-
+	
 	return ($text, $lines, $columns);
 }
 
@@ -183,23 +180,23 @@ sub startdialog {
 	my $this=shift;
 	my $question=shift;
 	my $wantinputfd=shift;
-
+	
 	debug debug => "preparing to run dialog. Params are:" ,
 		join(",", $this->program, @_);
 
-	our ($saveout, $savein);
-	open($saveout, ">&", \*STDOUT) || die $!;
-	$this->dialog_saveout($saveout);
+	use vars qw{*SAVEOUT *SAVEIN};
+	open(SAVEOUT, ">&STDOUT") || die $!;
+	$this->dialog_saveout(\*SAVEOUT);
 	if ($wantinputfd) {
 		$this->dialog_savein(undef);
 	} else {
-		open($savein, "<&", \*STDIN) || die $!;
-		$this->dialog_savein($savein);
+		open(SAVEIN, "<&STDIN") || die $!;
+		$this->dialog_savein(\*SAVEIN);
 	}
 
 	$this->dialog_savew($^W);
 	$^W=0;
-
+	
 	unless ($this->capb_backup || grep { $_ eq '--defaultno' } @_) {
 		if ($this->program ne 'Xdialog') {
 			unshift @_, '--nocancel';
@@ -212,7 +209,7 @@ sub startdialog {
 	if ($this->program eq 'Xdialog' && $_[0] eq '--passwordbox') {
 		$_[0]='--password --inputbox'
 	}
-
+	
 	use vars qw{*OUTPUT_RDR *OUTPUT_WTR};
 	if ($this->hasoutputfd) {
 		pipe(OUTPUT_RDR, OUTPUT_WTR) || die "pipe: $!";
@@ -221,7 +218,7 @@ sub startdialog {
 		$this->dialog_output_rdr(\*OUTPUT_RDR);
 		unshift @_, "--output-fd", fileno(\*OUTPUT_WTR);
 	}
-
+	
 	my $backtitle='';
 	if (defined $this->info) {
 		$backtitle = $this->info->description;
@@ -291,7 +288,7 @@ sub waitdialog {
 	my $ret=$? >> 8;
 	if ($ret == 255 || ($ret == 1 && join(' ', @_) !~ m/--yesno\s/)) {
 		$this->backup(1);
-		return;
+		return undef;
 	}
 
 	if (wantarray) {
@@ -307,7 +304,7 @@ sub showdialog {
 	my $this=shift;
 	my $question=shift;
 
-	@_=map { &hide_escape } @_;
+	@_=map &hide_escape, @_;
 
 	if (defined $this->progress_bar) {
 		$this->progress_bar->stop;

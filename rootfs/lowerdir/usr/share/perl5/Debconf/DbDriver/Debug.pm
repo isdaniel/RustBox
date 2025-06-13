@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::DbDriver::Debug;
-use warnings;
 use strict;
 use Debconf::Log qw{:all};
 use base 'Debconf::DbDriver';

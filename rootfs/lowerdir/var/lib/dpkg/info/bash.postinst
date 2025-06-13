@@ -14,8 +14,15 @@ update-alternatives --install \
     10 \
   || true
 
-# Automatically added by dh_installmenu/13.14.1ubuntu5
-if [ "$1" = "configure" ] && [ -x "`command -v update-menus`" ] && [ -x "$DPKG_ROOT`command -v update-menus`" ]; then
+if [ "$1" = configure ] && dpkg --compare-versions "$2" le 3.2-3 \
+    && which add-shell >/dev/null
+then
+    add-shell /bin/bash
+    add-shell /bin/rbash
+fi
+
+# Automatically added by dh_installmenu/12.9ubuntu1
+if [ "$1" = "configure" ] && [ -x "`which update-menus 2>/dev/null`" ]; then
 	update-menus
 fi
 # End automatically added section

@@ -1,5 +1,6 @@
 #!/bin/sh
 set -e
+export LC_ALL=C
 
 type=$1
 preversion=$2
@@ -13,19 +14,43 @@ checkpkgver () {
     fi
 }
 
-if [ "$type" = configure ]
+if [ "$type" = "configure" ]
 then
+    # We don't use a registry anymore, remove the old file
+    rm -f /etc/ld.so.hwcappkgs
+ 
+    # /etc/ld.so.nohwcap code:
+        # Handle upgrades when libc-opt package has been installed.
+    # When a /etc/ld.so.nohwcap file exists, ld.so only use libraries
+    # from /lib, and ignore all optimised libraries. This file is
+    # inconditionaly created in the preinst script of libc.
+ 
+    # We check the version between the current installed libc and
+    # all optimized packages. Due to multiarch, this has to be done
+    # independently of the architecture of the package.
+    all_upgraded=yes
+    for pkg in libc6.1-alphaev67 libc6-xen ; do
+        ver=$(dpkg-query -l $pkg 2>/dev/null | sed -e '/^[a-z][a-z]\s/!d;/^.[nc]/d;' -e "s/^..\s\+$pkg[0-9a-z:]*\s\+//;s/\s.*//g")
+        if [ -n "$ver" ] && [ "$ver" != "2.31-0ubuntu9" ]; then
+            all_upgraded=no
+        fi
+    done
+
+    # If the versions of all optimized packages are the same as the libc
+    # one, we could remove /etc/ld.so.nohwcap. Otherwise, it will be removed
+    # when all optimized packages are upgraded or removed.
+    if [ "$all_upgraded" = yes ] ; then
+        rm -f /etc/ld.so.nohwcap
+    fi
+
+
     # Load debconf module if available
     if [ -f /usr/share/debconf/confmodule ] ; then
 	. /usr/share/debconf/confmodule
     fi
 
-    # Only change LC_ALL after loading debconf to ensure the debconf templates
-    # are properly localized.
-    export LC_ALL=C
-
-    if [ -n "$preversion" ] && [ -x "$(command -v ischroot)" ] && ! ischroot; then
-	if dpkg --compare-versions "$preversion" lt 2.39; then
+    if [ -n "$preversion" ] && [ -x "$(which ischroot)" ] && ! ischroot; then
+	if dpkg --compare-versions "$preversion" lt 2.31; then
 	    check=""
 	    [ -f /var/run/services.need_restart ] && check=$(sort -u /var/run/services.need_restart 2>/dev/null)
 	    # Change service names back into package names, so that we can
@@ -49,11 +74,9 @@ then
 	    # NSS services check:
 	    	    echo -n "Checking for services that may need to be restarted..."
 	    # Only get the ones that are installed, of the same architecture
-	    # as libc (or arch all) and configured. Restart openssh-server even
-	    # if only half-configured to continue accepting new connections
-	    # during the upgrade.
+	    # as libc (or arch all) and configured
 	    [ -n "$check" ] && check=$(dpkg-query -W -f='${binary:Package} ${Status} ${Architecture}\n' $check 2> /dev/null | \
-			grep -E "(^openssh-server .* unpacked|installed) (all|${DPKG_MAINTSCRIPT_ARCH})$" | sed 's/[: ].*//')
+			grep -E "installed (all|${DPKG_MAINTSCRIPT_ARCH})$" | sed 's/[: ].*//')
 	    # some init scripts don't match the package names
 	    check=$(echo $check | \
 		    sed -e's/\bat\b/atd/g' \
@@ -62,7 +85,6 @@ then
 			-e's/\blpr\b/lpd/g' \
 			-e's/\blpr-ppd\b/lpd-ppd/g' \
 			-e's/\bmysql-server\b/mysql/g' \
-			-e's/\bopenssh-server\b/ssh/g' \
 			-e's/\bsasl2-bin\b/saslauthd/g' \
 			-e's/\bsamba\b/smbd/g' \
 			-e's/\bpostgresql-common\b/postgresql/g' \
@@ -141,7 +163,7 @@ then
 	    else
 		echo "Nothing to restart."
 	    fi
-	fi # end upgrading and $preversion lt 2.39
+	fi # end upgrading and $preversion lt 2.31
 	# give a reboot notification on al upgrades (LP: #1546457)
 	if [ -x /usr/share/update-notifier/notify-reboot-required ]; then
 	    /usr/share/update-notifier/notify-reboot-required
@@ -155,22 +177,10 @@ then
     if ischroot 2>/dev/null; then
         # Don't bother trying to re-exec init from a chroot:
         TELINIT=no
-    elif [ -n "${DPKG_ROOT:-}" ]; then
-        # Do not re-exec init if we are operating on a chroot from outside:
-        TELINIT=no
     elif [ -d /run/systemd/system ]; then
-        # Restart systemd on upgrade, but carefully.
-        # The restart is wanted because of LP: #1942276 and Bug: #993821
-        # The care is needed because of https://bugs.debian.org/753725
-        # (if systemd --help fails the system might still be quite broken but
-        # that seems better than the kernel panic that results if systemd
-        # cannot reexec itself).
+        # Skip if systemd is the active PID 1, since systemd doesn't
+        # need a reexec for a clean shutdown
         TELINIT=no
-        if systemd --help >/dev/null 2>/dev/null; then
-            systemctl daemon-reexec
-        else
-            echo "Error: Could not restart systemd, systemd binary not working" >&2
-        fi
     elif [ -x "`which initctl`" ]; then
         UPSTART=$(initctl version 2>/dev/null | awk '/upstart/ {print $3}' | tr -d ')')
         if dpkg --compare-versions "$UPSTART" lt-nl 1.6.1; then

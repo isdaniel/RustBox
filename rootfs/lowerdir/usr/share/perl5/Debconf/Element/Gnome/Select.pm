@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::Element::Gnome::Select;
-use warnings;
 use strict;
 use Gtk3;
 use utf8;

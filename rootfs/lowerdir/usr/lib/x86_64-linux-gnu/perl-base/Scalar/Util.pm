@@ -17,17 +17,33 @@ our @EXPORT_OK = qw(
   dualvar isdual isvstring looks_like_number openhandle readonly set_prototype
   tainted
 );
-our $VERSION    = "1.63";
-$VERSION =~ tr/_//d;
+our $VERSION    = "1.50";
+$VERSION   = eval $VERSION;
 
 require List::Util; # List::Util loads the XS
 List::Util->VERSION( $VERSION ); # Ensure we got the right XS version (RT#100863)
 
-# populating @EXPORT_FAIL is done in the XS code
+our @EXPORT_FAIL;
+
+unless (defined &weaken) {
+  push @EXPORT_FAIL, qw(weaken);
+}
+unless (defined &isweak) {
+  push @EXPORT_FAIL, qw(isweak isvstring);
+}
+unless (defined &isvstring) {
+  push @EXPORT_FAIL, qw(isvstring);
+}
+
 sub export_fail {
+  if (grep { /^(?:weaken|isweak)$/ } @_ ) {
+    require Carp;
+    Carp::croak("Weak references are not implemented in the version of perl");
+  }
+
   if (grep { /^isvstring$/ } @_ ) {
     require Carp;
-    Carp::croak("Vstrings are not implemented in this version of perl");
+    Carp::croak("Vstrings are not implemented in the version of perl");
   }
 
   @_;

@@ -88,8 +88,7 @@ _mount_module()
 				--make-rshared
 				--make-rslave
 				--make-rprivate
-				--make-runbindable
-				--mkdir"
+				--make-runbindable"
 			COMPREPLY=( $(compgen -W "${OPTS[*]}" -- $cur) )
 			return 0
 			;;

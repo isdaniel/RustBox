@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::DbDriver::DirTree;
-use warnings;
 use strict;
 use Debconf::Log qw(:all);
 use base 'Debconf::DbDriver::Directory';
@@ -11,7 +10,7 @@ use base 'Debconf::DbDriver::Directory';
 
 sub init {
 	my $this=shift;
-	if (not defined $this->{extension} or not length $this->{extension}) {
+	if (! defined $this->{extension} or ! length $this->{extension}) {
 		$this->{extension}=".dat";
 	}
 	$this->SUPER::init(@_);
@@ -24,7 +23,7 @@ sub save {
 
 	return unless $this->accept($item);
 	return if $this->{readonly};
-
+	
 	my @dirs=split(m:/:, $this->filename($item));
 	pop @dirs; # the base filename
 	my $base=$this->{directory};
@@ -33,7 +32,7 @@ sub save {
 		next if -d $base;
 		mkdir $base or $this->error("mkdir $base: $!");
 	}
-
+	
 	$this->SUPER::save($item, @_);
 }
 
@@ -48,13 +47,13 @@ sub filename {
 
 sub iterator {
 	my $this=shift;
-
+	
 	my @stack=();
 	my $currentdir="";
 	my $handle;
 	opendir($handle, $this->{directory}) or
 		$this->error("opendir: $this->{directory}: $!");
-
+		
 	my $iterator=Debconf::Iterator->new(callback => sub {
 		my $i;
 		while ($handle or @stack) {
@@ -79,7 +78,7 @@ sub iterator {
 			next unless $i=~s/$this->{extension}$//;
 			return $currentdir.$i;
 		}
-		return;
+		return undef;
 	});
 
 	$this->SUPER::iterator($iterator);

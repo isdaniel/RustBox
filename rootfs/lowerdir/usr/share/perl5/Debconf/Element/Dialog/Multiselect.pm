@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::Element::Dialog::Multiselect;
-use warnings;
 use strict;
 use base qw(Debconf::Element::Multiselect);
 use Debconf::Encoding qw(width);
@@ -12,7 +11,7 @@ use Debconf::Log qw(debug);
 
 sub show {
 	my $this=shift;
-
+	
 	my ($text, $lines, $columns)=
 		$this->frontend->makeprompt($this->question, -2);
 
@@ -33,7 +32,7 @@ sub show {
 			}
 		}
 	}
-
+	
 	$lines=$lines + $menu_height + $this->frontend->spacer;
 	my $selectspacer = $this->frontend->selectspacer;
 	my $c=1;
@@ -56,12 +55,12 @@ sub show {
 			$columns = width($choice) + $selectspacer;
 		}
 	}
-
+	
 	if ($this->frontend->dashsep) {
 		unshift @params, $this->frontend->dashsep;
 	}
-
-	@params=('--separate-output', '--checklist',
+	
+	@params=('--separate-output', '--checklist', 
 	         $text, $lines, $columns, $menu_height, @params);
 
 	my $value=$this->frontend->showdialog($this->question, @params);

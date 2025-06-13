@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::Element::Multiselect;
-use warnings;
 use strict;
 use base qw(Debconf::Element::Select);
 
@@ -33,7 +32,7 @@ sub translate_default {
 	$this->question->template->i18n('');
 	my @choices_c=$this->question->choices_split;
 	$this->question->template->i18n(1);
-
+	
 	my @ret;
 	foreach my $c_default ($this->question->value_split) {
 		foreach (my $x=0; $x <= $#choices; $x++) {

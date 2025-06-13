@@ -2,14 +2,6 @@
 # This file was preprocessed, do not edit!
 
 
-use warnings;
-use strict;
-use Debconf::Db;
-use Debconf::Template;
-use Getopt::Long;
-
-use vars qw(%opts $filename $debug $error $checkonly $unseen);
-
 sub usage {
 	print STDERR <<EOF;
 Usage: debconf-set-selections [-vcu] [file]
@@ -19,6 +11,15 @@ Usage: debconf-set-selections [-vcu] [file]
 EOF
 	exit(1);
 }
+
+
+use warnings;
+use strict;
+use Debconf::Db;
+use Debconf::Template;
+use Getopt::Long;
+
+use vars qw(%opts $filename $debug $error $checkonly $unseen);
 
 sub info {
 	my $msg = shift;
@@ -38,7 +39,7 @@ sub error {
 
 sub load_answer {
 	my ($owner, $label, $type, $content) = @_;
-
+	
 	info "Loading answer for '$label'";
 
 	my $template=Debconf::Template->get($label);
@@ -48,7 +49,7 @@ sub load_answer {
 		$template->extended_description("This is a fake template used to pre-seed the debconf database. If you are seeing this, something is probably wrong.");
 	}
 	$template->type($type);
-
+	
 	my $question=Debconf::Question->get($label);
 	if (! $question) {
 		error("Cannot find a question for $label");
@@ -106,42 +107,29 @@ GetOptions(
 	"unseen|u" => \$unseen,
 ) || usage();
 
-{
-	local $ENV{DEBCONF_NOWARNINGS} = 'yes' if $checkonly;
-	Debconf::Db->load;
-}
+Debconf::Db->load;
 
 $error = 0;
 
-unshift @ARGV, '-' unless @ARGV;
-foreach my $filename (@ARGV) {
-	my $input;
-	if ($filename eq '-') {
-		$input = \*STDIN;
-	} elsif (not open $input, '<', $filename) {
-		warn $!;
-		next;
+while (<>) {
+	$_=mungeline($_);
+	while (/\\$/ && ! eof) {
+		s/\\$//;
+		$_.=mungeline(<>);
 	}
-	while (<$input>) {
-		$_=mungeline($_);
-		while (/\\$/ && ! eof) {
-			s/\\$//;
-			$_.=mungeline(<$input>);
+	next if /^\s*$/ || /^\s*\#/;
+	my ($owner, $label, $type, $content) = /^\s*(\S+)\s+(\S+)\s+(\S+)(?:\s(.*))?/;
+	if (! defined $content) {
+		$content='';
+	}
+	if (ok_format($owner, $label, $type, $content)) {
+		if (grep { $_ eq $type } @knownflags) {
+			info "Trying to set '$type' flag to '$content'";
+			set_flag($owner, $label, $type, $content);
 		}
-		next if /^\s*$/ || /^\s*\#/;
-		my ($owner, $label, $type, $content) = /^\s*(\S+)\s+(\S+)\s+(\S+)(?:\s(.*))?/;
-		if (! defined $content) {
-			$content='';
-		}
-		if (ok_format($owner, $label, $type, $content)) {
-			if (grep { $_ eq $type } @knownflags) {
-				info "Trying to set '$type' flag to '$content'";
-				set_flag($owner, $label, $type, $content);
-			}
-			else {
-				info "Trying to set '$label' [$type] to '$content'";
-				load_answer($owner, $label, $type, $content);
-			}
+		else {
+			info "Trying to set '$label' [$type] to '$content'";
+			load_answer($owner, $label, $type, $content);
 		}
 	}
 }

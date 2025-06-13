@@ -1,7 +1,7 @@
 /.
+/sbin
+/sbin/logsave
 /usr
-/usr/sbin
-/usr/sbin/logsave
 /usr/share
 /usr/share/doc
 /usr/share/doc/logsave

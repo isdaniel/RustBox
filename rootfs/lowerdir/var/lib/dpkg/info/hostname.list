@@ -1,7 +1,7 @@
 /.
+/bin
+/bin/hostname
 /usr
-/usr/bin
-/usr/bin/hostname
 /usr/share
 /usr/share/doc
 /usr/share/doc/hostname
@@ -10,10 +10,10 @@
 /usr/share/man
 /usr/share/man/man1
 /usr/share/man/man1/hostname.1.gz
-/usr/bin/dnsdomainname
-/usr/bin/domainname
-/usr/bin/nisdomainname
-/usr/bin/ypdomainname
+/bin/dnsdomainname
+/bin/domainname
+/bin/nisdomainname
+/bin/ypdomainname
 /usr/share/man/man1/dnsdomainname.1.gz
 /usr/share/man/man1/domainname.1.gz
 /usr/share/man/man1/nisdomainname.1.gz

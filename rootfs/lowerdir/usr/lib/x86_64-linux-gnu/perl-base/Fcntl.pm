@@ -1,15 +1,17 @@
 package Fcntl;
 
 use strict;
+our($VERSION, @ISA, @EXPORT, @EXPORT_OK, %EXPORT_TAGS);
 
-use Exporter 'import';
+require Exporter;
 require XSLoader;
-our $VERSION = '1.15';
+@ISA = qw(Exporter);
+$VERSION = '1.13';
 
 XSLoader::load();
 
 # Named groups of exports
-our %EXPORT_TAGS = (
+%EXPORT_TAGS = (
     'flock'   => [qw(LOCK_SH LOCK_EX LOCK_NB LOCK_UN)],
     'Fcompat' => [qw(FAPPEND FASYNC FCREAT FDEFER FDSYNC FEXCL FLARGEFILE
 		     FNDELAY FNONBLOCK FRSYNC FSYNC FTRUNC)],
@@ -30,7 +32,7 @@ our %EXPORT_TAGS = (
 
 # Items to export into callers namespace by default
 # (move infrequently used names to @EXPORT_OK below)
-our @EXPORT =
+@EXPORT =
   qw(
 	FD_CLOEXEC
 	F_ALLOCSP
@@ -103,7 +105,7 @@ our @EXPORT =
      );
 
 # Other items we are prepared to export if requested
-our @EXPORT_OK = (qw(
+@EXPORT_OK = (qw(
 	DN_ACCESS
 	DN_ATTRIB
 	DN_CREATE

@@ -6,12 +6,11 @@ _lsblk_module()
 	prev="${COMP_WORDS[COMP_CWORD-1]}"
 
 	LSBLK_COLS_ALL="
-		NAME KNAME PATH MAJ:MIN FSAVAIL FSSIZE FSTYPE FSUSED FSUSE% FSVER MOUNTPOINT
-		LABEL UUID PTUUID PTTYPE PARTTYPE PARTTYPENAME PARTLABEL PARTUUID PARTFLAGS RA
-		RO RM HOTPLUG MODEL SERIAL SIZE STATE OWNER GROUP MODE ALIGNMENT MIN-IO OPT-IO
-		PHY-SEC LOG-SEC ROTA SCHED RQ-SIZE TYPE DISC-ALN DISC-GRAN DISC-MAX DISC-ZERO
-		WSAME WWN RAND PKNAME HCTL TRAN SUBSYSTEMS REV VENDOR ZONED ZONE-SZ ZONE-WGRAN
-		ZONE-APP ZONE-NR ZONE-OMAX ZONE-AMAX DAX MQ
+		NAME KNAME MAJ:MIN FSTYPE MOUNTPOINT LABEL UUID PARTTYPE
+		PARTLABEL PARTUUID PARTFLAGS RA RO RM HOTPLUG MODEL SERIAL SIZE
+		STATE OWNER GROUP MODE ALIGNMENT MIN-IO OPT-IO PHY-SEC LOG-SEC
+		ROTA SCHED RQ-SIZE TYPE DISC-ALN DISC-GRAN DISC-MAX DISC-ZERO
+		WSAME WWN RAND PKNAME HCTL TRAN SUBSYSTEMS REV VENDOR
 	"
 
 	case $prev in
@@ -32,7 +31,7 @@ _lsblk_module()
 			COMPREPLY=( $(compgen -P "$prefix" -W "${MAJOR:-""}" -S ',' -- $realcur) )
 			return 0
 			;;
-		'-o'|'--output'|'-E'|'--dedup')
+		'-o'|'--output'|'-M'|'--dedup')
 			local prefix realcur LSBLK_COLS
 			realcur="${cur##*,}"
 			prefix="${cur%$realcur}"
@@ -79,17 +78,13 @@ _lsblk_module()
 				--inverse
 				--topology
 				--scsi
-				--nvme
-				--virtio
 				--sort
-				--width
 				--help
 				--version"
 			COMPREPLY=( $(compgen -W "${OPTS[*]}" -- $cur) )
 			return 0
 			;;
 	esac
-	compopt -o bashdefault -o default
 	COMPREPLY=( $(compgen -W "$($1 -pnro name)" -- $cur) )
 	return 0
 }

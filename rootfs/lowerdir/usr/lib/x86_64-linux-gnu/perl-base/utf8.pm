@@ -1,19 +1,15 @@
 package utf8;
 
-use strict;
-use warnings;
+$utf8::hint_bits = 0x00800000;
 
-our $hint_bits = 0x00800000;
-
-our $VERSION = '1.25';
-our $AUTOLOAD;
+our $VERSION = '1.22';
 
 sub import {
-    $^H |= $hint_bits;
+    $^H |= $utf8::hint_bits;
 }
 
 sub unimport {
-    $^H &= ~$hint_bits;
+    $^H &= ~$utf8::hint_bits;
 }
 
 sub AUTOLOAD {

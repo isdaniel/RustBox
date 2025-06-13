@@ -3,7 +3,6 @@
 
 
 package Debconf::Log;
-use warnings;
 use strict;
 use base qw(Exporter);
 our @EXPORT_OK=qw(debug warn);
@@ -14,12 +13,12 @@ require Debconf::Config; # not use; there are recursive use loops
 my $log_open=0;
 sub debug {
 	my $type=shift;
-
+	
 	my $debug=Debconf::Config->debug;
 	if ($debug && $type =~ /$debug/) {
 		print STDERR "debconf ($type): ".join(" ", @_)."\n";
 	}
-
+	
 	my $log=Debconf::Config->log;
 	if ($log && $type =~ /$log/) {
 		require Sys::Syslog;

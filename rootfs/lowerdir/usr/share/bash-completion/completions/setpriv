@@ -104,8 +104,8 @@ _setpriv_module()
 				--egid
 				--reuid
 				--regid
-				--clear-groups
-				--keep-groups
+				--clear-groupsclear
+				--keep-groupskeep
 				--groups
 				--securebits
 				--pdeathsig

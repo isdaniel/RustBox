@@ -27,13 +27,14 @@ _mkswap_module()
 	esac
 	case $cur in
 		-*)
-			OPTS="--check --force --pagesize --lock --label --swapversion --uuid --verbose --version --help"
+			OPTS="--check --force --pagesize --label --swapversion --uuid --version --help"
 			COMPREPLY=( $(compgen -W "${OPTS[*]}" -- $cur) )
 			return 0
 			;;
 	esac
-	compopt -o bashdefault -o default
-	COMPREPLY=( $(compgen -W "$(lsblk -pnro name)" -- $cur) )
+	local IFS=$'\n'
+	compopt -o filenames
+	COMPREPLY=( $(compgen -f -- $cur) )
 	return 0
 }
 complete -F _mkswap_module mkswap

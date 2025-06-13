@@ -1,7 +1,7 @@
 /.
+/bin
+/bin/sed
 /usr
-/usr/bin
-/usr/bin/sed
 /usr/share
 /usr/share/doc
 /usr/share/doc/sed
@@ -13,7 +13,7 @@
 /usr/share/doc/sed/changelog.Debian.gz
 /usr/share/doc/sed/copyright
 /usr/share/doc/sed/examples
-/usr/share/doc/sed/examples/dc.sed
+/usr/share/doc/sed/examples/dc.sed.gz
 /usr/share/doc/sed/sedfaq.txt.gz
 /usr/share/info
 /usr/share/info/sed.info.gz

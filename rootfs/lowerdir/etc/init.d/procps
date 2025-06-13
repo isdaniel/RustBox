@@ -30,6 +30,5 @@ do_start_cmd() {
 	return $STATUS
 }
 
-do_reload() { call do_start_cmd; }
 do_stop() { return 0; }
 do_status() { return 0; }

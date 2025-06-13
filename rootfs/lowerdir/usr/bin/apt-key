@@ -92,7 +92,18 @@ requires_root() {
 
 command_available() {
     if [ -x "$1" ]; then return 0; fi
-    command -v "$1" >/dev/null # required by policy, see #747320
+    # command -v "$1" >/dev/null 2>&1 # not required by policy, see #747320
+    # which "$1" >/dev/null 2>&1 # is in debianutils (essential) but not on non-debian systems
+    local OLDIFS="$IFS"
+    IFS=:
+    for p in $PATH; do
+	if [ -x "${p}/${1}" ]; then
+	    IFS="$OLDIFS"
+	    return 0
+	fi
+    done
+    IFS="$OLDIFS"
+    return 1
 }
 
 escape_shell() {
@@ -314,11 +325,11 @@ is_supported_keyring() {
     local FILEEXT="${1##*.}"
     if [ "$FILEEXT" = 'gpg' ]; then
 	# 0x98, 0x99 and 0xC6 via octal as hex isn't supported by dashs printf
-	if printf '\231' | cmp -s -n 1 - "$1"; then
+	if printf '\231' | cmp --silent --bytes=1 - "$1"; then
 	    true
-	elif printf '\230' | cmp -s -n 1 - "$1"; then
+	elif printf '\230' | cmp --silent --bytes=1 - "$1"; then
 	    true
-	elif printf '\306' | cmp -s -n 1 - "$1"; then
+	elif printf '\306' | cmp --silent --bytes=1 - "$1"; then
 	    true
 	else
 	    apt_warn "The key(s) in the keyring $1 are ignored as the file has an unsupported filetype."
@@ -446,8 +457,7 @@ dearmor_keyring() {
     # The awk script is more complex through to skip surrounding garbage and
     # to support multiple keys in one file (old gpgs generate version headers
     # which get printed with the original and hence result in garbage input for base64
-    awk '{ gsub(/\r/,"") }
-/^-----BEGIN/{ x = 1; }
+    awk '/^-----BEGIN/{ x = 1; }
 /^$/{ if (x == 1) { x = 2; }; }
 /^[^=-]/{ if (x == 2) { print $0; }; }
 /^-----END/{ x = 0; }' | base64 -d
@@ -646,9 +656,6 @@ if [ -z "$TRUSTEDFILE" ]; then
    TRUSTEDFILE="/etc/apt/trusted.gpg"
    eval $(apt-config shell TRUSTEDFILE Apt::GPGV::TrustedKeyring)
    eval $(apt-config shell TRUSTEDFILE Dir::Etc::Trusted/f)
-   if [ "$APT_KEY_NO_LEGACY_KEYRING" ]; then
-        TRUSTEDFILE="/dev/null"
-   fi
 fi
 
 command="$1"
@@ -664,10 +671,10 @@ prepare_gpg_home() {
     # well as the script hopefully uses apt-key optionally then like e.g.
     # debian-archive-keyring for (upgrade) cleanup did
     if [ -n "$DPKG_MAINTSCRIPT_PACKAGE" ] && [ -z "$APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE" ]; then
-	if ! dpkg-query --show --showformat '${Pre-Depends}${Depends}${Recommends}\n' "$DPKG_MAINTSCRIPT_PACKAGE" 2>/dev/null | grep -E -q 'gpg|gnupg'; then
+	if ! dpkg-query --show --showformat '${Pre-Depends}${Depends}${Recommends}\n' "$DPKG_MAINTSCRIPT_PACKAGE" 2>/dev/null | grep -q gnupg; then
 	    cat >&2 <<EOF
 Warning: The $DPKG_MAINTSCRIPT_NAME maintainerscript of the package $DPKG_MAINTSCRIPT_PACKAGE
-Warning: seems to use apt-key (provided by apt) without depending on gpg, gnupg, or gnupg2.
+Warning: seems to use apt-key (provided by apt) without depending on gnupg or gnupg2.
 Warning: This will BREAK in the future and should be fixed by the package maintainer(s).
 Note: Check first if apt-key functionality is needed at all - it probably isn't!
 EOF
@@ -733,18 +740,8 @@ warn_on_script_usage() {
     # (Maintainer) scripts should not be using apt-key
     if [ -n "$DPKG_MAINTSCRIPT_PACKAGE" ]; then
 	echo >&2 "Warning: apt-key should not be used in scripts (called from $DPKG_MAINTSCRIPT_NAME maintainerscript of the package ${DPKG_MAINTSCRIPT_PACKAGE})"
-    fi
-
-    echo >&2 "Warning: apt-key is deprecated. Manage keyring files in trusted.gpg.d instead (see apt-key(8))."
-}
-
-warn_outside_maintscript() {
-    # In del, we want to warn in interactive use, but not inside maintainer
-    # scripts, so as to give people a chance to migrate keyrings.
-    #
-    # FIXME: We should always warn starting in 2022.
-    if [ -z "$DPKG_MAINTSCRIPT_PACKAGE" ]; then
-	echo >&2 "Warning: apt-key is deprecated. Manage keyring files in trusted.gpg.d instead (see apt-key(8))."
+    elif [ ! -t 1 ]; then
+	echo >&2 "Warning: apt-key output should not be parsed (stdout is not a terminal)"
     fi
 }
 
@@ -763,7 +760,6 @@ case "$command" in
         ;;
     del|rm|remove)
 	# no script warning here as removing 'add' usage needs 'del' for cleanup
-	warn_outside_maintscript
 	requires_root
 	foreach_keyring_do 'remove_key_from_keyring' "$@"
 	aptkey_echo "OK"
@@ -776,7 +772,6 @@ case "$command" in
 	merge_back_changes
 	;;
     net-update)
-	warn_on_script_usage
 	requires_root
 	setup_merged_keyring
 	net_update
@@ -800,8 +795,7 @@ case "$command" in
 	;;
     verify)
 	GPGV=''
-	ASSERT_PUBKEY_ALGO=''
-	eval $(apt-config shell GPGV Apt::Key::gpgvcommand ASSERT_PUBKEY_ALGO Apt::Key::assert-pubkey-algo)
+	eval $(apt-config shell GPGV Apt::Key::gpgvcommand)
 	if [ -n "$GPGV" ] && command_available "$GPGV"; then true;
 	elif command_available 'gpgv'; then GPGV='gpgv';
 	elif command_available 'gpgv2'; then GPGV='gpgv2';
@@ -809,20 +803,6 @@ case "$command" in
 	else
 	   apt_error 'gpgv, gpgv2 or gpgv1 required for verification, but neither seems installed'
 	   exit 29
-	fi
-	GPGV_ARGS=""
-	if [ "$ASSERT_PUBKEY_ALGO" ]; then
-		test="$(LC_ALL=C.UTF-8 "$GPGV" --assert-pubkey-algo 2>&1 || :)"
-		case "$test" in
-			*"missing argument"*)
-				GPGV_ARGS="--assert-pubkey-algo=$ASSERT_PUBKEY_ALGO"
-				;;
-			*[Ii]"nvalid option"*"assert-pubkey-algo"*)
-				;;
-			*)
-				apt_warn "Unknown response from gpgv to --assert-pubkey-algo check: $test"
-				;;
-		esac
 	fi
 	# for a forced keyid we need gpg --export, so full wrapping required
 	if [ -n "$FORCED_KEYID" ]; then
@@ -832,9 +812,9 @@ case "$command" in
 	fi
 	setup_merged_keyring
 	if [ -n "$FORCED_KEYRING" ]; then
-	    "$GPGV" $GPGV_ARGS --homedir "${GPGHOMEDIR}" --keyring "$(dearmor_filename "${FORCED_KEYRING}")" --ignore-time-conflict "$@"
+	    "$GPGV" --homedir "${GPGHOMEDIR}" --keyring "$(dearmor_filename "${FORCED_KEYRING}")" --ignore-time-conflict "$@"
 	else
-	    "$GPGV" $GPGV_ARGS --homedir "${GPGHOMEDIR}" --keyring "${GPGHOMEDIR}/pubring.gpg" --ignore-time-conflict "$@"
+	    "$GPGV" --homedir "${GPGHOMEDIR}" --keyring "${GPGHOMEDIR}/pubring.gpg" --ignore-time-conflict "$@"
 	fi
 	;;
     help)

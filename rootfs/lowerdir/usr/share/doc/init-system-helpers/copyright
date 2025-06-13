@@ -5,9 +5,7 @@ Copyright: 2013 Michael Stapelberg
 License: BSD-3-clause
 
 Files: debian/*
-Copyright: 2013-2014 Michael Stapelberg <stapelberg@debian.org>
-           2014-2022 Michael Biebl <biebl@debian.org>
-           2021-2022 Luca Boccassi <bluca@debian.org>
+Copyright: 2013 Michael Stapelberg <stapelberg@debian.org>
 License: BSD-3-clause
 
 Files: script/service man8/service.rst

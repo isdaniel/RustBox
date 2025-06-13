@@ -1,12 +1,14 @@
 package IPC::Open2;
 
 use strict;
+our ($VERSION, @ISA, @EXPORT);
 
-require 5.006;
-use Exporter 'import';
+require 5.000;
+require Exporter;
 
-our $VERSION	= 1.06;
-our @EXPORT		= qw(open2);
+$VERSION	= 1.04;
+@ISA		= qw(Exporter);
+@EXPORT		= qw(open2);
 
 # &open2: tom christiansen, <tchrist@convex.com>
 #

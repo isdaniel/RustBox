@@ -5,11 +5,12 @@
 #
 
 package Errno;
-use Exporter 'import';
+require Exporter;
 use strict;
 
-our $VERSION = "1.37";
+our $VERSION = "1.30";
 $VERSION = eval $VERSION;
+our @ISA = 'Exporter';
 
 my %err;
 

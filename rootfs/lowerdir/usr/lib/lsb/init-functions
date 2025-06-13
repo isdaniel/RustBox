@@ -144,7 +144,8 @@ killproc () {
         name_param="--name $base --pidfile $pidfile"
     fi
 
-    sig=${2:-} sig=${sig#-} sig=${sig#SIG}
+    sig=$(echo ${2:-} | sed -e 's/^-\(.*\)/\1/')
+    sig=$(echo $sig | sed -e 's/^SIG\(.*\)/\1/')
     if [ "$sig" = 15 ] || [ "$sig" = TERM ]; then
         is_term_sig="terminate_signal"
     fi
@@ -209,13 +210,18 @@ status_of_proc () {
 }
 
 log_use_fancy_output () {
+    TPUT=/usr/bin/tput
+    EXPR=/usr/bin/expr
     if  [ -t 1 ] &&
 	[ "x${TERM:-}" != "x" ] &&
-	[ "x${TERM:-}" != "xdumb" ]
+	[ "x${TERM:-}" != "xdumb" ] &&
+	[ -x $TPUT ] && [ -x $EXPR ] &&
+	$TPUT hpa 60 >/dev/null 2>&1 &&
+	$TPUT setaf 1 >/dev/null 2>&1
     then
-        [ -z $FANCYTTY ] && return 0 || true
+        [ -z $FANCYTTY ] && FANCYTTY=1 || true
     else
-        return 1
+        FANCYTTY=0
     fi
     case "$FANCYTTY" in
         1|Y|yes|true)   true;;
@@ -225,21 +231,21 @@ log_use_fancy_output () {
 
 log_success_msg () {
     if [ -n "${1:-}" ]; then
-        log_begin_msg "$@"
+        log_begin_msg $@
     fi
     log_end_msg 0
 }
 
 log_failure_msg () {
     if [ -n "${1:-}" ]; then
-        log_begin_msg "$@" "..."
+        log_begin_msg $@ "..."
     fi
     log_end_msg 1 || true
 }
 
 log_warning_msg () {
     if [ -n "${1:-}" ]; then
-        log_begin_msg "$@" "..."
+        log_begin_msg $@ "..."
     fi
     log_end_msg 255 || true
 }
@@ -337,27 +343,32 @@ log_end_msg () {
         return 1
     fi
 
+    local retval
+    retval=$1
+
     log_end_msg_pre "$@"
 
     # Only do the fancy stuff if we have an appropriate terminal
+    # and if /usr is already mounted
     if log_use_fancy_output; then
-        esc=''		# escape character, printf '\033'
-        red="$esc[31m"		# ANSI color escapes
-        yellow="$esc[33m"
-        normal="$esc[0m"
+        RED=$( $TPUT setaf 1)
+        YELLOW=$( $TPUT setaf 3)
+        NORMAL=$( $TPUT op)
     else
-        red= yellow= normal=
+        RED=''
+        YELLOW=''
+        NORMAL=''
     fi
 
     if [ $1 -eq 0 ]; then
         echo "." || true
     elif [ $1 -eq 255 ]; then
-        echo " ${yellow}(warning).${normal}" || true
+        /bin/echo -e " ${YELLOW}(warning).${NORMAL}" || true
     else
-        echo " ${red}failed!${normal}" || true
+        /bin/echo -e " ${RED}failed!${NORMAL}" || true
     fi
     log_end_msg_post "$@"
-    return $1
+    return $retval
 }
 
 log_action_msg () {
@@ -389,10 +400,9 @@ log_action_end_msg () {
         echo "done${end}" || true
     else
         if log_use_fancy_output; then
-            esc=''		# escape character, printf '\033'
-            red="$esc[31m"	# ANSI color escapes
-            normal="$esc[0m"
-            echo "${red}failed${end}${normal}" || true
+            RED=$( $TPUT setaf 1)
+            NORMAL=$( $TPUT op)
+            /bin/echo -e "${RED}failed${end}${NORMAL}" || true
         else
             echo "failed${end}" || true
         fi

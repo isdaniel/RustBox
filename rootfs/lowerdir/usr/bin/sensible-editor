@@ -1,65 +1,44 @@
 #!/bin/sh
-# Copyright 2007 Jari Aalto;
-# Copyright 2019-2022 Bastien Roucariès
-# Copyright 2022 Richard Lewis
-# Released under GNU GPL v2 or any later version
-PATH="$PATH:/usr/share/sensible-utils/bin"
 
-program="$(realpath "$(command -v "$0")")"
+ret="$?"
 
-Try()
-{
-    $candidate "$@"
-    ret=$?
-    [ "$ret" -ne 126 ] && [ "$ret" -ne 127 ] && exit "$ret"
-}
+# Prevent recursive loops, where these values are set to this script
+p="$(which sensible-editor)"
+[ -n "$EDITOR" ] && [ "$(which $EDITOR || true)" = "$p" ] && EDITOR=
+[ -n "$EDITOR" ] && [ "$(which $VISUAL || true)" = "$p" ] && VISUAL=
+[ -n "$EDITOR" ] && [ "$(which $SELECTED_EDITOR || true)" = "$p" ] && SELECTED_EDITOR=
 
-TryEnv()
-{
-    # global $candidate
-    [ -z "$candidate" ] && return
-    # Prevent recursive loops, where environment variables are set to this script
-    [ x$(realpath "$(command -v "$candidate" || true)" || true) = x"$program" ] && return
-    # interpret like environ (7) man page. Do not use eval in order to not leak variables
-    sh -c "$candidate \"\$@\"" EDITOR "$@"
-    ret=$?
-    # Operating system command not found
-    [ "$ret" -ne 126 ] && [ "$ret" -ne 127 ] && exit "$ret"
-}
-
-
-# work around for #991982
-nano ()
-{
-    if [ -z "$TERM" ]; then
-	return 126
-    else
-	command nano "$@"
-    fi
-}
-
-for candidate in "$VISUAL" "$EDITOR" "$SENSIBLE_EDITOR" "$SELECTED_EDITOR"; do
-    TryEnv "$@"
-done
-
-# fix #987675
-if [ -n "$HOME" ]; then
-    if [ -r ~/.selected_editor ]; then
-	. ~/.selected_editor 2>/dev/null
-    elif [ -z "$EDITOR" ] && [ -z "$SELECTED_EDITOR" ] && [ -t 0 ]; then
-	select-editor && . ~/.selected_editor 2>/dev/null
-    fi
+if [ -n "$VISUAL" ]; then
+	${VISUAL} "$@"
+	ret="$?"
+	if [ "$ret" -ne 126 ] && [ "$ret" -ne 127 ]; then
+		exit "$ret"
+	fi
 fi
 
-for candidate in "$EDITOR" "$SELECTED_EDITOR"; do
-    TryEnv "$@"
-done
+if [ -r ~/.selected_editor ]; then
+	. ~/.selected_editor 2>/dev/null || true
+elif [ -z "$EDITOR" ] && [ -z "$SELECTED_EDITOR" ] && [ -t 0 ]; then
+	select-editor && . ~/.selected_editor 2>/dev/null || true
+fi
 
-for candidate in editor nano nano-tiny vi; do
-    Try "$@"
-done
-
-echo "Couldn't find an editor!" 1>&2
-echo 'Set the $EDITOR environment variable to your desired editor.' 1>&2
-exit 1
-
+${EDITOR:-${SELECTED_EDITOR:-editor}} "$@"
+ret="$?"
+if [ "$ret" -eq 126 ] || [ "$ret" -eq 127 ]; then
+	nano "$@"
+	ret="$?"
+	if [ "$ret" -eq 126 ] || [ "$ret" -eq 127 ]; then
+		nano-tiny "$@"
+		ret="$?"
+		if [ "$ret" -eq 126 ] || [ "$ret" -eq 127 ]; then
+			vi "$@"
+			ret="$?"
+			if [ "$ret" -eq 126 ] || [ "$ret" -eq 127 ]; then
+				echo "Couldn't find an editor!" 1>&2
+				echo "Set the \$EDITOR environment variable to your desired editor." 1>&2
+				exit 1
+			fi
+		fi
+	fi
+fi
+exit "$ret"

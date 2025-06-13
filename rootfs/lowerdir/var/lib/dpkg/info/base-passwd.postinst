@@ -5,7 +5,6 @@ set -e
 # Load the debconf confmodule if it is available.  It may not be because this
 # package is essential and therefore can't depend on debconf directly.
 if [ -f /usr/share/debconf/confmodule ]; then
-	# shellcheck disable=SC1091
 	. /usr/share/debconf/confmodule
 fi
 
@@ -18,12 +17,12 @@ askyesno () {
 	fi
 
 	while : ; do
-		printf '%s ' "$1"
-		read -r a || true
+		echo -n "$1 "
+		read a || true
 		if [ "$a" = "" ] ; then
 			a="y"
 		fi
-		a=$(echo $a | tr '[:upper:]' '[:lower:]')
+		a=`echo $a | tr A-Z a-z`
 		if [ "$a" = "y" ] || [ "$a" = "n" ] ; then
 			break
 		fi
@@ -56,16 +55,34 @@ if [ ! "$1" = "configure" ] ; then
     exit 0
 fi
 
-if [ ! -e "$DPKG_ROOT/etc/passwd" ] ; then
-	cp "$DPKG_ROOT/usr/share/base-passwd/passwd.master" "$DPKG_ROOT/etc/passwd"
+if [ ! -e /etc/passwd ] ; then
+	cp /usr/share/base-passwd/passwd.master /etc/passwd
 fi
 
-if [ ! -e "$DPKG_ROOT/etc/group" ] ; then
-	cp "$DPKG_ROOT/usr/share/base-passwd/group.master" "$DPKG_ROOT/etc/group"
+if [ ! -e /etc/group ] ; then
+	cp /usr/share/base-passwd/group.master /etc/group
 fi
 
-tmp=$(mktemp)
-if [ -n "$2" ] && ! update-passwd --dry-run > "$tmp" ; then
+if [ "$2" = "3.2.2" ] && [ -f /etc/passwd.org ] ; then
+	cat <<EOF
+
+You are upgrading from version 3.2.2 of base-passwd which had a nasty
+bug: it swapped the uid and gid of local accounts.  If you have not
+fixed this problem manually I can undo the changes by restoring your
+previous passwd file from the backup /etc/passwd.org.
+
+EOF
+
+	askyesno "Should I restore your passwd? [Y/n]"
+
+	if [ "$a" = "y" ] ; then
+		cat /etc/passwd.org > /etc/passwd
+		changes=1
+	fi
+fi
+
+tmp=`tempfile`
+if ! update-passwd --dry-run > $tmp ; then
 	if [ -f /usr/share/debconf/confmodule ] ; then
 		db_version 2.0
 		update-passwd --verbose
@@ -83,7 +100,7 @@ The list of proposed changes is:
 
 EOF
 
-		cat "$tmp"
+		cat $tmp
 		cat <<EOF
 
 It is highly recommended that you allow update-passwd to make these changes
@@ -109,7 +126,7 @@ EOF
 	fi
 fi
 
-rm -f "$tmp"
+rm -f $tmp
 
 if [ "$changes" -gt 0 ] ; then
 	if searchpath nscd; then

@@ -5,9 +5,16 @@ update-alternatives --install /usr/bin/pager pager /bin/more 50 \
 	--slave /usr/share/man/man1/pager.1.gz pager.1.gz \
 	/usr/share/man/man1/more.1.gz
 
-# Automatically added by dh_installsystemd/13.14.1ubuntu5
+# We stopped shipping the 'pg' utility, so remove it as a pager
+# alternative on upgrades from Stretch.
+update-alternatives --remove pager /usr/bin/pg
+
+# Automatically added by dh_installdeb/12.10ubuntu1
+dpkg-maintscript-helper rm_conffile /etc/cron.weekly/fstrim 2.31.1-0.4ubuntu1\~ -- "$@"
+# End automatically added section
+# Automatically added by dh_installsystemd/12.10ubuntu1
 if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
-	# The following line should be removed in trixie or trixie+1
+	# This will only remove masks created by d-s-h on package removal.
 	deb-systemd-helper unmask 'fstrim.timer' >/dev/null || true
 
 	# was-enabled defaults to true, so new installations run enable.
@@ -22,7 +29,7 @@ if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-decon
 	fi
 fi
 # End automatically added section
-# Automatically added by dh_installsystemd/13.14.1ubuntu5
+# Automatically added by dh_installsystemd/12.10ubuntu1
 if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
 	if [ -d /run/systemd/system ]; then
 		systemctl --system daemon-reload >/dev/null || true
@@ -35,16 +42,30 @@ if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-decon
 	fi
 fi
 # End automatically added section
-# Automatically added by dh_installsystemd/13.14.1ubuntu5
+# Automatically added by dh_installsystemd/12.10ubuntu1
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+	if deb-systemd-helper debian-installed 'fstrim.timer'; then
+		# This will only remove masks created by d-s-h on package removal.
+		deb-systemd-helper unmask 'fstrim.timer' >/dev/null || true
+
+		if deb-systemd-helper --quiet was-enabled 'fstrim.timer'; then
+			# Create new symlinks, if any.
+			deb-systemd-helper enable 'fstrim.timer' >/dev/null || true
+		fi
+	fi
+
+	# Update the statefile to add new symlinks (if any), which need to be cleaned
+	# up on purge. Also remove old symlinks.
+	deb-systemd-helper update-state 'fstrim.timer' >/dev/null || true
+fi
+# End automatically added section
+# Automatically added by dh_installsystemd/12.10ubuntu1
 if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
 	if [ -d /run/systemd/system ]; then
 		systemctl --system daemon-reload >/dev/null || true
 		if [ -n "$2" ]; then
-			_dh_action=restart
-		else
-			_dh_action=start
+			deb-systemd-invoke try-restart 'fstrim.service' 'fstrim.timer' >/dev/null || true
 		fi
-		deb-systemd-invoke $_dh_action 'fstrim.service' >/dev/null || true
 	fi
 fi
 # End automatically added section

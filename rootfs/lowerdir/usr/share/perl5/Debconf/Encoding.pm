@@ -16,7 +16,7 @@ BEGIN {
 		$charmap = `locale charmap`;
 		chomp $charmap;
 	}
-
+	
 	no warnings;
 	eval q{ use Text::WrapI18N; use Text::CharWidth };
 	use warnings;
@@ -44,10 +44,10 @@ my $old_input_charmap;
 sub convert {
 	my $input_charmap = shift;
 	my $string = shift;
-
+	
 	return unless defined $charmap;
-
-	if (! defined $old_input_charmap ||
+	
+	if (! defined $old_input_charmap || 
 	    $input_charmap ne $old_input_charmap) {
 		$converter = Text::Iconv->new($input_charmap, $charmap);
 		$old_input_charmap = $input_charmap;

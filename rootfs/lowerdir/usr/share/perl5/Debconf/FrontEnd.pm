@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::FrontEnd;
-use warnings;
 use strict;
 use Debconf::Gettext;
 use Debconf::Priority;
@@ -13,7 +12,7 @@ use base qw(Debconf::Base);
 
 sub init {
 	my $this=shift;
-
+	
 	$this->elements([]);
 	$this->interactive('');
 	$this->capb('');
@@ -26,7 +25,7 @@ sub init {
 
 sub elementtype {
 	my $this=shift;
-
+	
 	my $ret;
 	if (ref $this) {
 		($ret) = ref($this) =~ m/Debconf::FrontEnd::(.*)/;
@@ -79,7 +78,7 @@ sub add {
 	foreach (@{$this->elements}) {
 		return if $element->question == $_->question;
 	}
-
+	
 	$element->frontend($this);
 	push @{$this->elements}, $element;
 }
@@ -154,14 +153,14 @@ sub progress_stop {
 
 sub clear {
 	my $this=shift;
-
+	
 	$this->elements([]);
 }
 
 
 sub default_title {
 	my $this=shift;
-
+	
 	$this->title(sprintf(gettext("Configuring %s"), shift));
 	$this->requested_title($this->title);
 }

@@ -1,5 +1,4 @@
 libcrypt.so.1 libcrypt1 #MINVER#
-* Build-Depends-Package: libcrypt-dev
  GLIBC_2.2.5@GLIBC_2.2.5 1:4.1.0
  XCRYPT_2.0@XCRYPT_2.0 1:4.1.0
  XCRYPT_4.3@XCRYPT_4.3 1:4.3.0

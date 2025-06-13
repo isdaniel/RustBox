@@ -1,8 +1,8 @@
 /.
+/lib
+/lib/x86_64-linux-gnu
+/lib/x86_64-linux-gnu/liblzma.so.5.2.4
 /usr
-/usr/lib
-/usr/lib/x86_64-linux-gnu
-/usr/lib/x86_64-linux-gnu/liblzma.so.5.4.5
 /usr/share
 /usr/share/doc
 /usr/share/doc/liblzma5
@@ -11,4 +11,4 @@
 /usr/share/doc/liblzma5/THANKS
 /usr/share/doc/liblzma5/changelog.Debian.gz
 /usr/share/doc/liblzma5/copyright
-/usr/lib/x86_64-linux-gnu/liblzma.so.5
+/lib/x86_64-linux-gnu/liblzma.so.5

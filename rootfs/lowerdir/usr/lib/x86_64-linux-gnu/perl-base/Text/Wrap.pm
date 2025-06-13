@@ -1,32 +1,42 @@
-use strict; use warnings;
-
 package Text::Wrap;
 
 use warnings::register;
+require Exporter;
 
-BEGIN { require Exporter; *import = \&Exporter::import }
+@ISA = qw(Exporter);
+@EXPORT = qw(wrap fill);
+@EXPORT_OK = qw($columns $break $huge);
 
-our @EXPORT = qw( wrap fill );
-our @EXPORT_OK = qw( $columns $break $huge );
+$VERSION = 2013.0523;
+$SUBVERSION = 'modern';
 
-our $VERSION = '2021.0814';
-our $SUBVERSION = 'modern'; # back-compat vestige
+use 5.010_000;
 
-our $columns = 76;  # <= screen width
-our $break = '(?=\s)(?:\r\n|\PM\pM*)';
-our $huge = 'wrap'; # alternatively: 'die' or 'overflow'
-our $unexpand = 1;
-our $tabstop = 8;
-our $separator = "\n";
-our $separator2 = undef;
+use vars qw($VERSION $SUBVERSION $columns $debug $break $huge $unexpand $tabstop $separator $separator2);
+use strict;
 
-sub _xlen { () = $_[0] =~ /\PM/g }
+BEGIN	{
+	$columns = 76;  # <= screen width
+	$debug = 0;
+	$break = '(?=\s)\X';
+	$huge = 'wrap'; # alternatively: 'die' or 'overflow'
+	$unexpand = 1;
+	$tabstop = 8;
+	$separator = "\n";
+	$separator2 = undef;
+}
+
+my $CHUNK = qr/\X/;
+
+sub _xlen(_) { scalar(() = $_[0] =~ /$CHUNK/g) }
+
+sub _xpos(_) { _xlen( substr( $_[0], 0, pos($_[0]) ) ) }
 
 use Text::Tabs qw(expand unexpand);
 
 sub wrap
 {
-	my ($ip, $xp, @t) = map +( defined $_ ? $_ : '' ), @_;
+	my ($ip, $xp, @t) = @_;
 
 	local($Text::Tabs::tabstop) = $tabstop;
 	my $r = "";
@@ -49,17 +59,17 @@ sub wrap
 
 	pos($t) = 0;
 	while ($t !~ /\G(?:$break)*\Z/gc) {
-		if ($t =~ /\G((?:(?!\n)\PM\pM*){0,$ll})($break|\n+|\z)/xmgc) {
+		if ($t =~ /\G((?:(?=[^\n])\X){0,$ll})($break|\n+|\z)/xmgc) {
 			$r .= $unexpand 
 				? unexpand($nl . $lead . $1)
 				: $nl . $lead . $1;
 			$remainder = $2;
-		} elsif ($huge eq 'wrap' && $t =~ /\G((?:(?!\n)\PM\pM*){$ll})/gc) {
+		} elsif ($huge eq 'wrap' && $t =~ /\G((?:(?=[^\n])\X){$ll})/gc) {
 			$r .= $unexpand 
 				? unexpand($nl . $lead . $1)
 				: $nl . $lead . $1;
 			$remainder = defined($separator2) ? $separator2 : $separator;
-		} elsif ($huge eq 'overflow' && $t =~ /\G((?:(?!\n)\PM\pM*)*?)($break|\n+|\z)/xmgc) {
+		} elsif ($huge eq 'overflow' && $t =~ /\G((?:(?=[^\n])\X)*?)($break|\n+|\z)/xmgc) {
 			$r .= $unexpand 
 				? unexpand($nl . $lead . $1)
 				: $nl . $lead . $1;
@@ -69,7 +79,7 @@ sub wrap
 		} elsif ($columns < 2) {
 			warnings::warnif "Increasing \$Text::Wrap::columns from $columns to 2";
 			$columns = 2;
-			return @_;
+			return ($ip, $xp, @t);
 		} else {
 			die "This shouldn't happen";
 		}
@@ -84,15 +94,23 @@ sub wrap
 	}
 	$r .= $remainder;
 
+	print "-----------$r---------\n" if $debug;
+
+	print "Finish up with '$lead'\n" if $debug;
+
+	my($opos) = pos($t);
+
 	$r .= $lead . substr($t, pos($t), length($t) - pos($t))
 		if pos($t) ne length($t);
+
+	print "-----------$r---------\n" if $debug;;
 
 	return $r;
 }
 
 sub fill 
 {
-	my ($ip, $xp, @raw) = map +( defined $_ ? $_ : '' ), @_;
+	my ($ip, $xp, @raw) = @_;
 	my @para;
 	my $pp;
 
@@ -110,6 +128,5 @@ sub fill
 }
 
 1;
-
 __END__
 

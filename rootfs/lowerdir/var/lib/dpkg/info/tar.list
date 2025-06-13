@@ -1,8 +1,8 @@
 /.
+/bin
+/bin/tar
 /etc
 /usr
-/usr/bin
-/usr/bin/tar
 /usr/lib
 /usr/lib/mime
 /usr/lib/mime/packages

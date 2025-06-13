@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::Element::Gnome::Progress;
-use warnings;
 use strict;
 use Gtk3;
 use utf8;
@@ -50,7 +49,7 @@ sub info {
 	my $question=shift;
 
 	$this->widget->set_text(to_Unicode($question->description));
-
+	
 	return 1;
 }
 

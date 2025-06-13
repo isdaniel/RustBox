@@ -1,10 +1,7 @@
 liblzma.so.5 liblzma5 #MINVER#
 * Build-Depends-Package: liblzma-dev
  XZ_5.0@XZ_5.0 5.1.1alpha+20110809
- XZ_5.1.2alpha@XZ_5.1.2alpha 5.4
- XZ_5.2.2@XZ_5.2.2 5.4
  XZ_5.2@XZ_5.2 5.2.2
- XZ_5.4@XZ_5.4 5.4.0
  lzma_alone_decoder@XZ_5.0 5.1.1alpha+20110809
  lzma_alone_encoder@XZ_5.0 5.1.1alpha+20110809
  lzma_auto_decoder@XZ_5.0 5.1.1alpha+20110809
@@ -19,13 +16,11 @@ liblzma.so.5 liblzma5 #MINVER#
  lzma_block_header_size@XZ_5.0 5.1.1alpha+20110809
  lzma_block_total_size@XZ_5.0 5.1.1alpha+20110809
  lzma_block_uncomp_encode@XZ_5.2 5.2.2
- lzma_block_uncomp_encode@XZ_5.2.2 5.4
  lzma_block_unpadded_size@XZ_5.0 5.1.1alpha+20110809
  lzma_check_is_supported@XZ_5.0 5.1.1alpha+20110809
  lzma_check_size@XZ_5.0 5.1.1alpha+20110809
  lzma_code@XZ_5.0 5.1.1alpha+20120614
  lzma_cputhreads@XZ_5.2 5.2.2
- lzma_cputhreads@XZ_5.2.2 5.2.2
  lzma_crc32@XZ_5.0 5.1.1alpha+20110809
  lzma_crc64@XZ_5.0 5.1.1alpha+20110809
  lzma_easy_buffer_encode@XZ_5.0 5.1.1alpha+20110809
@@ -33,18 +28,15 @@ liblzma.so.5 liblzma5 #MINVER#
  lzma_easy_encoder@XZ_5.0 5.1.1alpha+20110809
  lzma_easy_encoder_memusage@XZ_5.0 5.1.1alpha+20110809
  lzma_end@XZ_5.0 5.1.1alpha+20110809
- lzma_file_info_decoder@XZ_5.4 5.4.0
  lzma_filter_decoder_is_supported@XZ_5.0 5.1.1alpha+20110809
  lzma_filter_encoder_is_supported@XZ_5.0 5.1.1alpha+20110809
  lzma_filter_flags_decode@XZ_5.0 5.1.1alpha+20110809
  lzma_filter_flags_encode@XZ_5.0 5.1.1alpha+20110809
  lzma_filter_flags_size@XZ_5.0 5.1.1alpha+20110809
  lzma_filters_copy@XZ_5.0 5.1.1alpha+20110809
- lzma_filters_free@XZ_5.4 5.4.0
  lzma_filters_update@XZ_5.0 5.1.1alpha+20110809
  lzma_get_check@XZ_5.0 5.1.1alpha+20110809
  lzma_get_progress@XZ_5.2 5.2.2
- lzma_get_progress@XZ_5.2.2 5.2.2
  lzma_index_append@XZ_5.0 5.1.1alpha+20110809
  lzma_index_block_count@XZ_5.0 5.1.1alpha+20110809
  lzma_index_buffer_decode@XZ_5.0 5.1.1alpha+20110809
@@ -75,14 +67,11 @@ liblzma.so.5 liblzma5 #MINVER#
  lzma_index_stream_size@XZ_5.0 5.1.1alpha+20110809
  lzma_index_total_size@XZ_5.0 5.1.1alpha+20110809
  lzma_index_uncompressed_size@XZ_5.0 5.1.1alpha+20110809
- lzma_lzip_decoder@XZ_5.4 5.4.0
  lzma_lzma_preset@XZ_5.0 5.1.1alpha+20110809
  lzma_memlimit_get@XZ_5.0 5.1.1alpha+20110809
  lzma_memlimit_set@XZ_5.0 5.1.1alpha+20110809
  lzma_memusage@XZ_5.0 5.1.1alpha+20110809
  lzma_mf_is_supported@XZ_5.0 5.1.1alpha+20110809
- lzma_microlzma_decoder@XZ_5.4 5.4.0
- lzma_microlzma_encoder@XZ_5.4 5.4.0
  lzma_mode_is_supported@XZ_5.0 5.1.1alpha+20110809
  lzma_physmem@XZ_5.0 5.1.1alpha+20110809
  lzma_properties_decode@XZ_5.0 5.1.1alpha+20110809
@@ -94,21 +83,13 @@ liblzma.so.5 liblzma5 #MINVER#
  lzma_raw_decoder_memusage@XZ_5.0 5.1.1alpha+20110809
  lzma_raw_encoder@XZ_5.0 5.1.1alpha+20110809
  lzma_raw_encoder_memusage@XZ_5.0 5.1.1alpha+20110809
- lzma_str_from_filters@XZ_5.4 5.4.0
- lzma_str_list_filters@XZ_5.4 5.4.0
- lzma_str_to_filters@XZ_5.4 5.4.0
  lzma_stream_buffer_bound@XZ_5.0 5.1.1alpha+20110809
  lzma_stream_buffer_decode@XZ_5.0 5.1.1alpha+20110809
  lzma_stream_buffer_encode@XZ_5.0 5.1.1alpha+20110809
  lzma_stream_decoder@XZ_5.0 5.1.1alpha+20110809
- lzma_stream_decoder_mt@XZ_5.4 5.4.0
  lzma_stream_encoder@XZ_5.0 5.1.1alpha+20110809
- lzma_stream_encoder_mt@XZ_5.1.2alpha 5.4
  lzma_stream_encoder_mt@XZ_5.2 5.2.2
- lzma_stream_encoder_mt@XZ_5.2.2 5.2.2
- lzma_stream_encoder_mt_memusage@XZ_5.1.2alpha 5.4
  lzma_stream_encoder_mt_memusage@XZ_5.2 5.2.2
- lzma_stream_encoder_mt_memusage@XZ_5.2.2 5.2.2
  lzma_stream_flags_compare@XZ_5.0 5.1.1alpha+20110809
  lzma_stream_footer_decode@XZ_5.0 5.1.1alpha+20110809
  lzma_stream_footer_encode@XZ_5.0 5.1.1alpha+20110809

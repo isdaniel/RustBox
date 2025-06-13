@@ -3,7 +3,8 @@
 #
 # This file is included from other service-specific PAM config files,
 # and should contain a list of modules that define tasks to be performed
-# at the start and end of interactive sessions.
+# at the start and end of sessions of *any* kind (both interactive and
+# non-interactive).
 #
 # As of pam 1.0.1-6, this file is managed by pam-auth-update by default.
 # To take advantage of this, it is recommended that you configure any

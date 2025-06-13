@@ -1,12 +1,11 @@
 # Generated from XSLoader_pm.PL (resolved %Config::Config value)
 # This file is unique for every OS
 
-use strict;
-no strict 'refs';
-
 package XSLoader;
 
-our $VERSION = "0.32"; # remember to update version in POD!
+$VERSION = "0.30"; # remember to update version in POD!
+
+#use strict;
 
 package DynaLoader;
 
@@ -111,9 +110,6 @@ sub load {
     push(@DynaLoader::dl_shared_objects, $file); # record files loaded
     return &$xs(@_);
 }
-
-# Can't test with DynaLoader->can('bootstrap_inherit') when building in the
-# core, as XSLoader gets built before DynaLoader.
 
 sub bootstrap_inherit {
     require DynaLoader;

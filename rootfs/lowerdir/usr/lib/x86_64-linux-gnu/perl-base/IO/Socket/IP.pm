@@ -1,21 +1,17 @@
 #  You may distribute under the terms of either the GNU General Public License
 #  or the Artistic License (the same terms as Perl itself)
 #
-#  (C) Paul Evans, 2010-2020 -- leonerd@leonerd.org.uk
+#  (C) Paul Evans, 2010-2015 -- leonerd@leonerd.org.uk
 
 package IO::Socket::IP;
-
-use v5;
-use strict;
-use warnings;
-
 # $VERSION needs to be set before  use base 'IO::Socket'
 #  - https://rt.cpan.org/Ticket/Display.html?id=92107
 BEGIN {
-   our $VERSION = '0.41_01';
-   $VERSION = eval $VERSION;
+   $VERSION = '0.39';
 }
 
+use strict;
+use warnings;
 use base qw( IO::Socket );
 
 use Carp;
@@ -34,7 +30,6 @@ use Socket 1.97 qw(
 );
 my $AF_INET6 = eval { Socket::AF_INET6() }; # may not be defined
 my $AI_ADDRCONFIG = eval { Socket::AI_ADDRCONFIG() } || 0;
-my $AI_NUMERICHOST = eval { Socket::AI_NUMERICHOST() } || 0;
 use POSIX qw( dup2 );
 use Errno qw( EINVAL EINPROGRESS EISCONN ENOTCONN ETIMEDOUT EWOULDBLOCK EOPNOTSUPP );
 
@@ -97,12 +92,6 @@ sub import
          die "Cannot socket(PF_INET6) - $!";
 
       if( setsockopt $testsock, IPPROTO_IPV6, IPV6_V6ONLY, 0 ) {
-         if ($^O eq "dragonfly") {
-            # dragonflybsd 6.4 lies about successfully turning this off
-            if (getsockopt $testsock, IPPROTO_IPV6, IPV6_V6ONLY) {
-               return $can_disable_v6only = 0;
-            }
-         }
          return $can_disable_v6only = 1;
       }
       elsif( $! == EINVAL || $! == EOPNOTSUPP ) {
@@ -161,8 +150,6 @@ sub _io_socket_ip__configure
    my ( $arg ) = @_;
 
    my %hints;
-   my $localflags;
-   my $peerflags;
    my @localinfos;
    my @peerinfos;
 
@@ -174,20 +161,9 @@ sub _io_socket_ip__configure
 
    if( defined $arg->{GetAddrInfoFlags} ) {
       $hints{flags} = $arg->{GetAddrInfoFlags};
-      $localflags  = $arg->{GetAddrInfoFlags};
-      $peerflags  = $arg->{GetAddrInfoFlags};
    }
    else {
-      if (defined $arg->{LocalHost} and $arg->{LocalHost} =~ /^\d+\.\d+\.\d+\.\d+$/) {
-              $localflags = $AI_NUMERICHOST;
-      } else {
-              $localflags = $AI_ADDRCONFIG;
-      }
-      if (defined $arg->{PeerHost} and $arg->{PeerHost} =~ /^\d+\.\d+\.\d+\.\d+$/) {
-              $peerflags = $AI_NUMERICHOST;
-      } elsif (defined $arg->{PeerHost} and $arg->{PeerHost} ne 'localhost') {
-              $peerflags = $AI_ADDRCONFIG;
-      }
+      $hints{flags} = $AI_ADDRCONFIG;
    }
 
    if( defined( my $family = $arg->{Family} ) ) {
@@ -244,7 +220,6 @@ sub _io_socket_ip__configure
          my $fallback_port = $1;
 
       my %localhints = %hints;
-      $localhints{flags} = $localflags;
       $localhints{flags} |= AI_PASSIVE;
       ( my $err, @localinfos ) = getaddrinfo( $host, $service, \%localhints );
 
@@ -273,12 +248,10 @@ sub _io_socket_ip__configure
       defined $service and $service =~ s/\((\d+)\)$// and
          my $fallback_port = $1;
 
-      my %peerhints = %hints;
-      $peerhints{flags} = $peerflags;
-      ( my $err, @peerinfos ) = getaddrinfo( $host, $service, \%peerhints );
+      ( my $err, @peerinfos ) = getaddrinfo( $host, $service, \%hints );
 
       if( $err and defined $fallback_port ) {
-         ( $err, @peerinfos ) = getaddrinfo( $host, $fallback_port, \%peerhints );
+         ( $err, @peerinfos ) = getaddrinfo( $host, $fallback_port, \%hints );
       }
 
       if( $err ) {
@@ -358,7 +331,6 @@ sub _io_socket_ip__configure
       # If there wasn't, use getaddrinfo()'s AI_ADDRCONFIG side-effect to guess a
       # suitable family first.
       else {
-         $hints{flags} |= $AI_ADDRCONFIG;
          ( my $err, @infos ) = getaddrinfo( "", "0", \%hints );
          if( $err ) {
             $@ = "$err";

@@ -38,6 +38,7 @@
 /var
 /var/lib
 /var/lib/pam
+/usr/share/doc/libpam-runtime/NEWS.Debian.gz
 /usr/share/doc/libpam-runtime/changelog.Debian.gz
 /usr/share/man/man5/pam.d.5.gz
 /usr/share/man/man7/pam.7.gz

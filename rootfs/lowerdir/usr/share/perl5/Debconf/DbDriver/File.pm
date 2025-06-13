@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::DbDriver::File;
-use warnings;
 use strict;
 use Debconf::Log qw(:all);
 use Cwd 'abs_path';
@@ -41,20 +40,17 @@ sub init {
 	$this->error("No filename specified") unless $this->{filename};
 
 	my ($directory)=$this->{filename}=~m!^(.*)/[^/]+!;
-	if (length $directory and not -d $directory) {
+	if (length $directory and ! -d $directory) {
 		mkdir $directory || $this->error("mkdir $directory:$!");
 	}
 
-	if (exists $this->{root}) {
-		$this->{filename} = $this->{root} . $this->{filename};
-	}
 	$this->{filename} = abs_path($this->{filename});
 
 	debug "db $this->{name}" => "started; filename is $this->{filename}";
-
+	
 	if (! -e $this->{filename}) {
 		$this->{backup}=0;
-		sysopen(my $fh, $this->{filename},
+		sysopen(my $fh, $this->{filename}, 
 				O_WRONLY|O_TRUNC|O_CREAT,$this->{mode}) or
 			$this->error("could not open $this->{filename}");
 		close $fh;
@@ -99,7 +95,7 @@ sub shutdown {
 
 	return if $this->{readonly};
 
-	if (grep { $this->{dirty}->{$_} } keys %{$this->{cache}}) {
+	if (grep $this->{dirty}->{$_}, keys %{$this->{cache}}) {
 		debug "db $this->{name}" => "saving database";
 	}
 	else {
@@ -143,7 +139,7 @@ sub shutdown {
 
 
 sub load {
-	return;
+	return undef;
 }
 
 

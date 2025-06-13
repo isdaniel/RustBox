@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::FrontEnd::Text;
-use warnings;
 use strict;
 use base qw(Debconf::FrontEnd::Readline);
 

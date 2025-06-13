@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::Db;
-use warnings;
 use strict;
 use Debconf::Log qw{:all};
 use Debconf::Config;
@@ -40,7 +39,7 @@ sub makedriver {
 		die $@ if $@;
 	}
 	delete $config{driver}; # not a field for the object
-
+	
 	debug db => "making DbDriver of type $type";
 	"Debconf::DbDriver::$type"->new(%config);
 }

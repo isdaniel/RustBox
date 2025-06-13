@@ -42,7 +42,7 @@ updatever () {
   cat "$2" > "$dir/$1-$ver"
 
   # This section is for backwards compatibility only
-  if test -f "$dir/$1" || test -h "$dir/$1" ; then
+  if test -f "$dir/$1" ; then
     # The presence of "$dir/$1" is unusual in modern intallations, and
     # the results are mostly unused.  So only recreate them if they
     # already existed.

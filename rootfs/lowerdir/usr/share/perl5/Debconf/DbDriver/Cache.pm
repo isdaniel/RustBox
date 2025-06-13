@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::DbDriver::Cache;
-use warnings;
 use strict;
 use Debconf::Log qw{:all};
 use base 'Debconf::DbDriver';
@@ -65,7 +64,7 @@ sub cacheadd {
 sub cachedata {
 	my $this=shift;
 	my $item=shift;
-
+	
 	return $this->{cache}->{$item};
 }
 
@@ -84,7 +83,7 @@ sub cached {
 
 sub shutdown {
 	my $this=shift;
-
+	
 	return if $this->{readonly};
 
 	my $ret=1;
@@ -163,7 +162,7 @@ sub getfield {
 	my $this=shift;
 	my $item=shift;
 	my $field=shift;
-
+	
 	return unless $this->cached($item);
 	return $this->{cache}->{$item}->{fields}->{$field};
 }
@@ -178,7 +177,7 @@ sub setfield {
 	return if $this->{readonly};
 	return unless $this->cached($item);
 	$this->{dirty}->{$item}=1;
-	return $this->{cache}->{$item}->{fields}->{$field} = $value;
+	return $this->{cache}->{$item}->{fields}->{$field} = $value;	
 }
 
 
@@ -197,7 +196,7 @@ sub removefield {
 sub fields {
 	my $this=shift;
 	my $item=shift;
-
+	
 	return unless $this->cached($item);
 	return keys %{$this->{cache}->{$item}->{fields}};
 }
@@ -207,7 +206,7 @@ sub getflag {
 	my $this=shift;
 	my $item=shift;
 	my $flag=shift;
-
+	
 	return unless $this->cached($item);
 	return $this->{cache}->{$item}->{flags}->{$flag}
 		if exists $this->{cache}->{$item}->{flags}->{$flag};

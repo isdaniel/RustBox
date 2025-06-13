@@ -2,7 +2,7 @@
 /usr
 /usr/lib
 /usr/lib/x86_64-linux-gnu
-/usr/lib/x86_64-linux-gnu/libpcre2-8.so.0.11.2
+/usr/lib/x86_64-linux-gnu/libpcre2-8.so.0.9.0
 /usr/share
 /usr/share/doc
 /usr/share/doc/libpcre2-8-0

@@ -1,5 +1,1 @@
-# Ubuntu sources have moved to the /etc/apt/sources.list.d/ubuntu.sources
-# file, which uses the deb822 format. Use deb822-formatted .sources files
-# to manage package sources in the /etc/apt/sources.list.d/ directory.
-# See the sources.list(5) manual page for details.
-deb http://archive.ubuntu.com/ubuntu focal main universe
+deb http://archive.ubuntu.com/ubuntu focal main

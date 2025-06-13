@@ -1,4 +1,3 @@
-abfeb985041165b978c47ba14c97587e  usr/lib/x86_64-linux-gnu/libsystemd.so.0.38.0
-9a64698004dde7cc4a0294003225c780  usr/share/doc/libsystemd0/NEWS.Debian.gz
-cf494c9761a4ff06b706c63f84403e35  usr/share/doc/libsystemd0/changelog.Debian.gz
-b16a86fb841b001b52a5c5caccf526c2  usr/share/doc/libsystemd0/copyright
+226b25cb81ba8e96cf8698aa31742d43  lib/x86_64-linux-gnu/libsystemd.so.0.28.0
+dc49fd8a1f88e2ddd44f17ed7f9fa274  usr/share/doc/libsystemd0/changelog.Debian.gz
+013021fd8cdd4884a8cf41920e29221b  usr/share/doc/libsystemd0/copyright

@@ -11,14 +11,17 @@ case "$1" in
 
 esac
 
-# Automatically added by dh_installsystemd/13.14.1ubuntu5
-if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
-	deb-systemd-invoke stop 'fstrim.service' >/dev/null || true
+# Automatically added by dh_installsystemd/12.10ubuntu1
+if [ -d /run/systemd/system ] && [ "$1" = remove ]; then
+	deb-systemd-invoke stop 'fstrim.service' 'fstrim.timer' >/dev/null || true
 fi
 # End automatically added section
-# Automatically added by dh_installsystemd/13.14.1ubuntu5
-if [ -z "${DPKG_ROOT:-}" ] && [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+# Automatically added by dh_installsystemd/12.10ubuntu1
+if [ -d /run/systemd/system ] && [ "$1" = remove ]; then
 	deb-systemd-invoke stop 'fstrim.timer' >/dev/null || true
 fi
+# End automatically added section
+# Automatically added by dh_installdeb/12.10ubuntu1
+dpkg-maintscript-helper rm_conffile /etc/cron.weekly/fstrim 2.31.1-0.4ubuntu1\~ -- "$@"
 # End automatically added section
 

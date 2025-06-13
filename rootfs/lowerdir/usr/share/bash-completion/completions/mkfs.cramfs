@@ -36,8 +36,9 @@ _mkfs.cramfs_module()
 			return 0
 			;;
 	esac
-	compopt -o bashdefault -o default
-	COMPREPLY=( $(compgen -W "$(lsblk -pnro name)" -- $cur) )
+	local IFS=$'\n'
+	compopt -o filenames
+	COMPREPLY=( $(compgen -f -- $cur) )
 	return 0
 }
 complete -F _mkfs.cramfs_module mkfs.cramfs

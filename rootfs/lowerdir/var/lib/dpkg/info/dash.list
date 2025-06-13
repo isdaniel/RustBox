@@ -1,13 +1,11 @@
 /.
+/bin
+/bin/dash
 /usr
-/usr/bin
-/usr/bin/dash
 /usr/share
-/usr/share/debianutils
-/usr/share/debianutils/shells.d
-/usr/share/debianutils/shells.d/dash
 /usr/share/doc
 /usr/share/doc/dash
+/usr/share/doc/dash/NEWS.Debian.gz
 /usr/share/doc/dash/README.Debian.diet
 /usr/share/doc/dash/README.source
 /usr/share/doc/dash/changelog.Debian.gz
@@ -20,5 +18,5 @@
 /usr/share/man/man1/dash.1.gz
 /usr/share/menu
 /usr/share/menu/dash
-/usr/bin/sh
+/bin/sh
 /usr/share/man/man1/sh.1.gz

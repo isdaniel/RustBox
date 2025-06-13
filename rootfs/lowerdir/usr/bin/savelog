@@ -173,7 +173,7 @@ if [ "$count" -lt 2 ]; then
 	exit 2
 fi
 
-if [ -n "$COMPRESS" ] && [ -z "$(command -v $COMPRESS)"  ]; then
+if [ -n "$COMPRESS" ] && [ -z "`which $COMPRESS`"  ]; then
        echo "$prog: Compression binary not available, please make sure '$COMPRESS' is installed" 1>&2
        exit 2
 fi

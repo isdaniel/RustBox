@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::DbDriver::Pipe;
-use warnings;
 use strict;
 use Debconf::Log qw(:all);
 use base 'Debconf::DbDriver::Cache';
@@ -30,12 +29,12 @@ sub init {
 	my $fh;
 	if (defined $this->{infd}) {
 		if ($this->{infd} ne 'none') {
-			open ($fh, "<&=", $this->{infd}) or
+			open ($fh, "<&=$this->{infd}") or
 				$this->error("could not open file descriptor #$this->{infd}: $!");
 		}
 	}
-	else {
-		open ($fh, '<&', \*STDIN);
+	else {	
+		open ($fh, '-');
 	}
 
 	$this->SUPER::init(@_);
@@ -60,14 +59,14 @@ sub shutdown {
 	my $fh;
 	if (defined $this->{outfd}) {
 		if ($this->{outfd} ne 'none') {
-			open ($fh, ">&=", $this->{outfd}) or
+			open ($fh, ">&=$this->{outfd}") or
 				$this->error("could not open file descriptor #$this->{outfd}: $!");
 		}
 	}
 	else {
-		open ($fh, '>&', \*STDOUT);
+		open ($fh, '>-');
 	}
-
+	
 	if (defined $fh) {
 		$this->{format}->beginfile;
 		foreach my $item (sort keys %{$this->{cache}}) {
@@ -84,7 +83,7 @@ sub shutdown {
 
 
 sub load {
-	return;
+	return undef;
 }
 
 

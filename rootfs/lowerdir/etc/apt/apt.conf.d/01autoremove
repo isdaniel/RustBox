@@ -22,11 +22,20 @@ APT
   Never-MarkAuto-Sections
   {
 	"metapackages";
-	"tasks";
+	"contrib/metapackages";
+	"non-free/metapackages";
+	"restricted/metapackages";
+	"universe/metapackages";
+	"multiverse/metapackages";
   };
 
   Move-Autobit-Sections
   {
 	"oldlibs";
+	"contrib/oldlibs";
+	"non-free/oldlibs";
+	"restricted/oldlibs";
+	"universe/oldlibs";
+	"multiverse/oldlibs";
   };
 };

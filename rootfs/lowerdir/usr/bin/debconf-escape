@@ -1,8 +1,7 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
-use warnings;
 use strict;
 use Getopt::Long;
 
@@ -32,13 +31,13 @@ if ($escape == $unescape) {
 }
 
 if ($escape) {
-	while (<STDIN>) {
+	while (<>) {
 		s/\\/\\\\/g;
 		s/\n/\\n/g;
 		print;
 	}
 } else {
-	while (<STDIN>) {
+	while (<>) {
 		for (split /(\\.)/) {
 			s/\\(.)/$1 eq "n" ? "\n" : $1/eg;
 			print;

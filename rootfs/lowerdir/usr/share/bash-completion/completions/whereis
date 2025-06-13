@@ -17,12 +17,12 @@ _whereis_module()
 	esac
 	case $cur in
 		-*)
-			OPTS="-b -B -m -M -s -S -f -u -l -g"
+			OPTS="-b -B -m -M -s -S -f -u -l"
 			COMPREPLY=( $(compgen -W "${OPTS[*]}" -- $cur) )
 			return 0
 			;;
 	esac
-	COMPREPLY=( $(compgen -c -- $cur) )
+	COMPREPLY=( $(compgen -W "file" -- $cur) )
 	return 0
 }
 complete -F _whereis_module whereis

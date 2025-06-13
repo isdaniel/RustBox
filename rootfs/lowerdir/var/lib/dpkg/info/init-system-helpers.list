@@ -10,7 +10,6 @@
 /etc/rcS.d
 /etc/systemd
 /etc/systemd/system
-/etc/systemd/user
 /usr
 /usr/bin
 /usr/bin/deb-systemd-helper
@@ -29,6 +28,9 @@
 /usr/share/doc/init-system-helpers/README.policy-rc.d.gz
 /usr/share/doc/init-system-helpers/changelog.gz
 /usr/share/doc/init-system-helpers/copyright
+/usr/share/lintian
+/usr/share/lintian/overrides
+/usr/share/lintian/overrides/init-system-helpers
 /usr/share/man
 /usr/share/man/man1
 /usr/share/man/man1/deb-systemd-helper.1p.gz

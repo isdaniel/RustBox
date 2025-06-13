@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::Element::Web::Progress;
-use warnings;
 use strict;
 use base qw(Debconf::Element);
 

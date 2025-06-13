@@ -3,7 +3,7 @@ package File::Spec::Unix;
 use strict;
 use Cwd ();
 
-our $VERSION = '3.88';
+our $VERSION = '3.78';
 $VERSION =~ tr/_//d;
 
 sub _pp_canonpath {

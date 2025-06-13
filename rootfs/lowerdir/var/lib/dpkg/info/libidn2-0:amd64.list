@@ -2,7 +2,7 @@
 /usr
 /usr/lib
 /usr/lib/x86_64-linux-gnu
-/usr/lib/x86_64-linux-gnu/libidn2.so.0.4.0
+/usr/lib/x86_64-linux-gnu/libidn2.so.0.3.6
 /usr/share
 /usr/share/doc
 /usr/share/doc/libidn2-0

@@ -1,13 +1,16 @@
 package Exporter;
 
-use strict;
-no strict 'refs';
+require 5.006;
+
+# Be lean.
+#use strict;
+#no strict 'refs';
 
 our $Debug = 0;
 our $ExportLevel = 0;
 our $Verbose ||= 0;
-our $VERSION = '5.77';
-our %Cache;
+our $VERSION = '5.73';
+our (%Cache);
 
 sub as_heavy {
   require Exporter::Heavy;

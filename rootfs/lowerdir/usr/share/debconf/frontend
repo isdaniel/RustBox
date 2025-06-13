@@ -1,8 +1,7 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
-use warnings;
 use strict;
 use Debconf::Db;
 use Debconf::Template;
@@ -19,7 +18,6 @@ shift @ARGV if $ARGV[0] eq '--';
 
 my $package;
 my $no_title=0;
-my $root=$ENV{DPKG_ROOT} // '';
 if ($ENV{DEBCONF_PACKAGE}) {
 	$package=$ENV{DEBCONF_PACKAGE};
 }
@@ -28,16 +26,16 @@ elsif ($ARGV[0]=~m!^.*/(.*?)\.(?:postinst|postrm|prerm)$!) {
 	my $action=$ARGV[1];
 	$no_title=1 if $action eq 'triggered';
 }
-elsif (-e "$root/var/lib/dpkg/tmp.ci/control") {
-	open (my $control, "<", "$root/var/lib/dpkg/tmp.ci/control")
+elsif (-e "/var/lib/dpkg/tmp.ci/control") {
+	open (CONTROL, "< /var/lib/dpkg/tmp.ci/control")
 		|| die "Debconf: unable to open control file: $!";
-	while (<$control>) {
+	while (<CONTROL>) {
 		if (/^Package: (.*)/) {
 			$package=$1;
 			last;
 		}
 	}
-	close $control;
+	close CONTROL;
 	if (! exists $ENV{PERL_DL_NONLAZY} || ! $ENV{PERL_DL_NONLAZY}) {
 		warn "PERL_DL_NONLAZY is not set, if debconf is running from a preinst script, this is not safe";
 	}
@@ -68,7 +66,7 @@ else {
 	}
 }
 debug developer => "frontend running, package name is $package";
-$frontend->default_title($package) if length $package and not $no_title;
+$frontend->default_title($package) if length $package and !$no_title;
 $frontend->info(undef);
 
 if ($ARGV[0] =~/^(.*[.\/])(?:preinst|postinst|prerm|postrm)$/) {
@@ -93,7 +91,7 @@ if ($ARGV[0] =~/^(.*[.\/])(?:postinst|preinst)$/) {
 		$confmodule->owner($package);
 
 		1 while ($confmodule->communicate);
-
+		
 		exit $confmodule->exitcode if $confmodule->exitcode > 0;
 	}
 }

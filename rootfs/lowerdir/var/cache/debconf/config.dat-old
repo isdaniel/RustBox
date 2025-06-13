@@ -46,6 +46,12 @@ Name: base-passwd/user-remove
 Template: base-passwd/user-remove
 Owners: base-passwd
 
+Name: dash/sh
+Template: dash/sh
+Value: true
+Owners: dash
+Flags: seen
+
 Name: debconf-apt-progress/info
 Template: debconf-apt-progress/info
 Owners: debconf
@@ -96,16 +102,8 @@ Name: glibc/upgrade
 Template: glibc/upgrade
 Owners: libc6, libc6:amd64
 
-Name: libpam-modules/deprecate-tally
-Template: libpam-modules/deprecate-tally
-Owners: libpam-modules
-
 Name: libpam-modules/disable-screensaver
 Template: libpam-modules/disable-screensaver
-Owners: libpam-modules
-
-Name: libpam-modules/profiles-disabled
-Template: libpam-modules/profiles-disabled
 Owners: libpam-modules
 
 Name: libpam-runtime/conflicts

@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::FrontEnd::Noninteractive;
-use warnings;
 use strict;
 use Debconf::Encoding qw(width wrap);
 use Debconf::Gettext;
@@ -11,7 +10,7 @@ use base qw(Debconf::FrontEnd);
 
 
 
-sub init {
+sub init { 
         my $this=shift;
 
         $this->SUPER::init(@_);

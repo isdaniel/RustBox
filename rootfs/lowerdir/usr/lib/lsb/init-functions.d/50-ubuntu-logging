@@ -15,10 +15,9 @@ log_success_msg () {
 
 log_failure_msg () {
     if log_use_fancy_output; then
-        esc=''		# escape character, printf '\033'
-        red="$esc[31m"		# ANSI color escapes
-        normal="$esc[0m"
-        echo " $red*$normal $@" || true
+        RED=`$TPUT setaf 1`
+        NORMAL=`$TPUT op`
+        echo " $RED*$NORMAL $@" || true
     else
         echo " * $@" || true
     fi
@@ -26,10 +25,9 @@ log_failure_msg () {
 
 log_warning_msg () {
     if log_use_fancy_output; then
-        esc=''		# escape character, printf '\033'
-        yellow="$esc[33m"	# ANSI color escapes
-        normal="$esc[0m"
-        echo " $yellow*$normal $@" || true
+        YELLOW=`$TPUT setaf 3`
+        NORMAL=`$TPUT op`
+        echo " $YELLOW*$NORMAL $@" || true
     else
         echo " * $@" || true
     fi
@@ -44,11 +42,10 @@ log_daemon_msg () {
         return 1
     fi
 
-    TPUT=/usr/bin/tput
     if log_use_fancy_output && $TPUT xenl >/dev/null 2>&1; then
         COLS=`$TPUT cols`
         if [ "$COLS" ] && [ "$COLS" -gt 6 ]; then
-            COL=$(( COLS - 7 ))
+            COL=`$EXPR $COLS - 7`
         else
             COLS=80
             COL=73
@@ -78,9 +75,8 @@ log_daemon_msg () {
         # Enough trailing spaces for ` [fail]' to fit in; if the message
         # is too long it wraps here rather than later, which is what we
         # want.
-        esc=''		# escape character, printf '\033'
-        movecur="$esc[${COLS}G"	# ANSI horizontal position absolute
-        printf "$movecur " || true
+        $TPUT hpa `$EXPR $COLS - 1` || true
+        printf ' ' || true
     else
         echo " * $@" || true
         COL=
@@ -106,15 +102,16 @@ log_end_msg () {
             fi
         fi
 
-        esc=''			# escape character, printf '\033'
-        movecur="$esc[$(( COL + 1 ))G"	# ANSI horizontal position absolute
-        printf "\r$movecur" || true
+        printf "\r" || true
+        $TPUT hpa $COL
         if [ "$1" -eq 0 ]; then
             echo "[ OK ]" || true
         else
-            red="$esc[31m"	# ANSI color escapes
-            normal="$esc[0m"
-            echo "[${red}fail${normal}]" || true
+            printf '[' || true
+            $TPUT setaf 1 || true # red
+            printf fail || true
+            $TPUT op || true # normal
+            echo ']' || true
         fi
     else
         if [ "$1" -eq 0 ]; then

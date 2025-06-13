@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::Config;
-use warnings;
 use strict;
 use Debconf::Question;
 use Debconf::Gettext;
@@ -22,14 +21,14 @@ if ($ENV{DEBCONF_SYSTEMRC}) {
 } else {
 	unshift @config_files, ((getpwuid($>))[7])."/.debconfrc";
 }
-
+	   
 
 sub _hashify ($$) {
 	my $text=shift;
 	my $hash=shift;
 
 	$text =~ s/\$\{([^}]+)\}/$ENV{$1}/eg;
-
+	
 	my %ret;
 	my $i;
 	foreach my $line (split /\n/, $text) {
@@ -45,18 +44,18 @@ sub _hashify ($$) {
 	}
 	return $i;
 }
-
+ 
 sub _env_to_driver {
 	my $value=shift;
-
+	
 	my ($name, $options) = $value =~ m/^(\w+)(?:{(.*)})?$/;
 	return unless $name;
-
+	
 	return $name if Debconf::DbDriver->driver($name);
-
+	
 	my %hash = @_; # defaults from params
 	$hash{driver} = $name;
-
+	
 	if (defined $options) {
 		foreach (split ' ', $options) {
 			if (/^(\w+):(.*)/) {
@@ -74,22 +73,18 @@ sub load {
 	my $class=shift;
 	my $cf=shift;
 	my @defaults=@_;
-
+	
 	if (! $cf) {
 		for my $file (@config_files) {
-			$file = "$ENV{DPKG_ROOT}$file" if exists $ENV{DPKG_ROOT};
-			if (-e $file) {
-				$cf = $file;
-				last;
-			}
+			$cf=$file, last if -e $file;
 		}
 	}
 	die "No config file found" unless $cf;
 
-	open (my $debconf_config, "<", $cf) or die "$cf: $!\n";
+	open (DEBCONF_CONFIG, $cf) or die "$cf: $!\n";
 	local $/="\n\n"; # read a stanza at a time
 
-	1 until _hashify(<$debconf_config>, $config) || eof $debconf_config;
+	1 until _hashify(<DEBCONF_CONFIG>, $config) || eof DEBCONF_CONFIG;
 
 	if (! exists $config->{config}) {
 		print STDERR "debconf: ".gettext("Config database not specified in config file.")."\n";
@@ -104,13 +99,10 @@ sub load {
 		print STDERR "debconf: ".gettext("The Sigils and Smileys options in the config file are no longer used. Please remove them.")."\n";
 	}
 
-	while (<$debconf_config>) {
+	while (<DEBCONF_CONFIG>) {
 		my %config=(@defaults);
 		if (exists $ENV{DEBCONF_DB_REPLACE}) {
 			$config{readonly} = "true";
-		}
-		if (exists $ENV{DPKG_ROOT}) {
-			$config{root} = $ENV{DPKG_ROOT};
 		}
 		next unless _hashify($_, \%config);
 		eval {
@@ -121,7 +113,7 @@ sub load {
 			die $@;
 		}
 	}
-	close $debconf_config;
+	close DEBCONF_CONFIG;
 
 	if (exists $ENV{DEBCONF_DB_REPLACE}) {
 		$config->{config} = _env_to_driver($ENV{DEBCONF_DB_REPLACE},
@@ -177,7 +169,7 @@ EOF
 	};
 
 	return unless grep { $_ =~ /^-/ } @ARGV;
-
+	
 	require Getopt::Long;
 	Getopt::Long::Configure('bundling');
 	Getopt::Long::GetOptions(
@@ -192,11 +184,11 @@ EOF
 
 sub frontend {
 	my $class=shift;
-
+	
 	return $ENV{DEBIAN_FRONTEND} if exists $ENV{DEBIAN_FRONTEND};
 	$config->{frontend}=shift if @_;
 	return $config->{frontend} if exists $config->{frontend};
-
+	
 	my $ret='dialog';
 	my $question=Debconf::Question->get('debconf/frontend');
 	if ($question) {
@@ -291,7 +283,7 @@ sub c_values {
 sub AUTOLOAD {
 	(my $field = our $AUTOLOAD) =~ s/.*://;
 	my $class=shift;
-
+	
 	return $config->{$field}=shift if @_;
 	return $config->{$field} if defined $config->{$field};
 	return '';

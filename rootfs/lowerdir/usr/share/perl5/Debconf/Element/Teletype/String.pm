@@ -1,9 +1,8 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::Element::Teletype::String;
-use warnings;
 use strict;
 use base qw(Debconf::Element);
 
@@ -23,7 +22,7 @@ sub show {
 		question => $this->question,
 	);
 	return unless defined $value;
-
+	
 	$this->frontend->display("\n");
 	$this->value($value);
 }

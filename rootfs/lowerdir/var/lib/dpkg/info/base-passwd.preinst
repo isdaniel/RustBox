@@ -2,8 +2,8 @@
 set -e
 
 if [ "$1" = install ]; then
-	if [ ! -e "$DPKG_ROOT/etc/passwd" ]; then
-		cat > "$DPKG_ROOT/etc/passwd" <<'EOF'
+	if [ ! -e /etc/passwd ]; then
+		cat > /etc/passwd <<'EOF'
 root:*:0:0:root:/root:/bin/bash
 daemon:*:1:1:daemon:/usr/sbin:/usr/sbin/nologin
 bin:*:2:2:bin:/bin:/usr/sbin/nologin
@@ -19,14 +19,14 @@ proxy:*:13:13:proxy:/bin:/usr/sbin/nologin
 www-data:*:33:33:www-data:/var/www:/usr/sbin/nologin
 backup:*:34:34:backup:/var/backups:/usr/sbin/nologin
 list:*:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
-irc:*:39:39:ircd:/run/ircd:/usr/sbin/nologin
-_apt:*:42:65534::/nonexistent:/usr/sbin/nologin
+irc:*:39:39:ircd:/var/run/ircd:/usr/sbin/nologin
+gnats:*:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
 nobody:*:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
 EOF
 	fi
 
-	if [ ! -e "$DPKG_ROOT/etc/group" ]; then
-		cat > "$DPKG_ROOT/etc/group" <<'EOF'
+	if [ ! -e /etc/group ]; then
+		cat > /etc/group <<'EOF'
 root:*:0:
 daemon:*:1:
 bin:*:2:
@@ -56,6 +56,7 @@ operator:*:37:
 list:*:38:
 irc:*:39:
 src:*:40:
+gnats:*:41:
 shadow:*:42:
 utmp:*:43:
 video:*:44:

@@ -2,7 +2,7 @@
 /usr
 /usr/lib
 /usr/lib/x86_64-linux-gnu
-/usr/lib/x86_64-linux-gnu/libseccomp.so.2.5.5
+/usr/lib/x86_64-linux-gnu/libseccomp.so.2.4.3
 /usr/share
 /usr/share/doc
 /usr/share/doc/libseccomp2

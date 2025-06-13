@@ -1,13 +1,12 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -w
 # This file was preprocessed, do not edit!
 
 
 package Debconf::FrontEnd::Web;
-use warnings;
-use strict;
 use IO::Socket;
 use IO::Select;
 use CGI;
+use strict;
 use Debconf::Gettext;
 use base qw(Debconf::FrontEnd);
 
@@ -17,7 +16,7 @@ sub init {
 	my $this=shift;
 
 	$this->SUPER::init(@_);
-
+	
 	$this->port(8001) unless defined $this->port;
 	$this->formid(0);
 	$this->interactive(1);
@@ -38,7 +37,7 @@ sub init {
 
 sub client {
 	my $this=shift;
-
+	
 	$this->{client}=shift if @_;
 	return $this->{client} if $this->{client};
 
@@ -57,7 +56,7 @@ sub client {
 
 sub closeclient {
 	my $this=shift;
-
+	
 	close $this->client;
 	$this->client('');
 }
@@ -106,14 +105,14 @@ sub go {
 	my $query;
 	do {
 		$this->showclient($httpheader . $form);
-
+	
 		$this->closeclient;
 		$this->client;
-
+		
 		my @get=grep { /^GET / } split(/\r\n/, $this->commands);
 		my $get=shift @get;
 		my ($qs)=$get=~m/^GET\s+.*?\?(.*?)(?:\s+.*)?$/;
-
+	
 		$query=CGI->new($qs);
 	} until (defined $query->param('formid') &&
 		 $query->param('formid') eq $formid);
@@ -125,14 +124,14 @@ sub go {
 
 	foreach my $id ($query->param) {
 		next unless $idtoelt{$id};
-
+		
 		$idtoelt{$id}->value($query->param($id));
 		delete $idtoelt{$id};
 	}
 	foreach my $elt (values %idtoelt) {
 		$elt->value('');
 	}
-
+	
 	return 1;
 }
 
