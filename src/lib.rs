@@ -6,8 +6,10 @@ use nix::{
 use std::{
     ffi::CString,
     fs::{create_dir_all, write},
-    path::Path
+    path::Path, process
 };
+
+const CGROUP_PATH : &str = "/sys/fs/cgroup/sandbox";
 
 #[derive(Debug)]
 pub struct SandboxConfig {
@@ -56,10 +58,7 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<(), String> {
     .map_err(|e| format!("Overlay mount failed: {}", e))?;
 
     // CGroup setup
-    let cgroup_path = "/sys/fs/cgroup/sandbox";
-    create_dir_all(cgroup_path).map_err(|e| e.to_string())?;
-    write(format!("{}/memory.max", cgroup_path), config.memory_limit)
-        .map_err(|e| e.to_string())?;
+    cgroup_setting(&config)?;
 
     // Namespace isolation
     unshare(
@@ -75,31 +74,40 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<(), String> {
     println!("unshare executed successfully.");
 
     match unsafe { fork() } {
-        Ok(ForkResult::Child) => {
-            let proc_path: String = format!("{}/proc", merged);
-            mount(Some("proc"), proc_path.as_str(), Some("proc"), MsFlags::empty(), None::<&str>)
-                .map_err(|e| format!("Mount /proc failed: {}", e))?;
+Ok(ForkResult::Child) => {
+    let proc_path: String = format!("{}/proc", merged);
+    mount(Some("proc"), proc_path.as_str(), Some("proc"), MsFlags::empty(), None::<&str>)
+        .map_err(|e| format!("Mount /proc failed: {}", e))?;
 
-            chroot(merged.as_str())
-                .map_err(|e| format!("chroot failed: {}", e))?;
-            chdir("/")
-                .map_err(|e| format!("chdir failed: {}", e))?;
+    chroot(merged.as_str())
+        .map_err(|e| format!("chroot failed: {}", e))?;
+    chdir("/")
+        .map_err(|e| format!("chdir failed: {}", e))?;
 
-            let shell = CString::new(config.shell_path)
-                                .map_err(|e: std::ffi::NulError| format!("Invalid shell path CString: {}", e))?;
-            let arg0 = CString::new("sh")
-                .map_err(|e| format!("Invalid arg0 CString: {}", e))?;
-            execv(&shell, &[arg0])
-                .map_err(|e| format!("execv failed: {}", e))?;
-            println!("ForkResult::Child");
-            Ok(())
-        }
-        Ok(ForkResult::Parent { child, .. }) => {
-            let _ = nix::sys::wait::waitpid(child, None);
-            let _ = umount2(merged.as_str(), MntFlags::MNT_DETACH);
-            println!("ForkResult::Parent, child: {}, umount merged path {}",child, merged);
-            Ok(())
-        }
-        Err(e) => Err(format!("fork failed: {}", e)),
+    let shell = CString::new(config.shell_path)
+                        .map_err(|e: std::ffi::NulError| format!("Invalid shell path CString: {}", e))?;
+    let arg0 = CString::new("sh")
+        .map_err(|e| format!("Invalid arg0 CString: {}", e))?;
+    execv(&shell, &[arg0])
+        .map_err(|e| format!("execv failed: {}", e))?;
+    println!("ForkResult::Child");
+    Ok(())
+}
+Ok(ForkResult::Parent { child, .. }) => {
+    let _ = nix::sys::wait::waitpid(child, None);
+    let _ = umount2(merged.as_str(), MntFlags::MNT_DETACH);
+    println!("ForkResult::Parent, child: {}, umount merged path {}",child, merged);
+    Ok(())
+}
+Err(e) => Err(format!("fork failed: {}", e)),
     }
+}
+
+fn cgroup_setting(config: &SandboxConfig) -> Result<(), String> {
+    create_dir_all(CGROUP_PATH).map_err(|e| e.to_string())?;
+    write(format!("{}/memory.max", CGROUP_PATH), config.memory_limit.clone())
+.map_err(|e| e.to_string())?;
+    write(format!("{}/cgroup.procs", CGROUP_PATH), process::id().to_string())
+    .map_err(|e| e.to_string())?;
+    Ok(())
 }
