@@ -35,11 +35,11 @@ pub struct SandboxConfig {
     pub memory_limit: String, // Memory limit, e.g., "100M"
     pub shell_path: String,   // Path to the shell or binary to execute
 }
-
+```
 
 ## root remote debug
 
-pleaes refer :　https://github.com/vadimcn/codelldb/blob/master/MANUAL.md#connecting-to-lldb-server-agent
+please refer: [connecting-to-lldb-server-agent](https://github.com/vadimcn/codelldb/blob/master/MANUAL.md#connecting-to-lldb-server-agent)
 
 ```
 sudo lldb-server platform --server --listen 127.0.0.1:12345 ./target/debug/rustbox

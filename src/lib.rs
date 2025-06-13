@@ -86,7 +86,7 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<(), String> {
                 .map_err(|e| format!("chdir failed: {}", e))?;
 
             let shell = CString::new(config.shell_path)
-                                .map_err(|e| format!("Invalid shell path CString: {}", e))?;
+                                .map_err(|e: std::ffi::NulError| format!("Invalid shell path CString: {}", e))?;
             let arg0 = CString::new("sh")
                 .map_err(|e| format!("Invalid arg0 CString: {}", e))?;
             execv(&shell, &[arg0])
@@ -97,7 +97,7 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<(), String> {
         Ok(ForkResult::Parent { child, .. }) => {
             let _ = nix::sys::wait::waitpid(child, None);
             let _ = umount2(merged.as_str(), MntFlags::MNT_DETACH);
-            println!("ForkResult::Parent, child: {}, merged path {}",child, merged);
+            println!("ForkResult::Parent, child: {}, umount merged path {}",child, merged);
             Ok(())
         }
         Err(e) => Err(format!("fork failed: {}", e)),
