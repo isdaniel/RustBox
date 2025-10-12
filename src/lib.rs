@@ -15,19 +15,8 @@ pub struct SandboxConfig {
     pub memory_limit: String,
     pub shell_path: String,
     pub workdir: String,
+    pub cpu_limit: String
 }
-
-impl Default for SandboxConfig {
-    fn default() -> Self {
-        Self {
-            base_dir: "./rootfs".to_string(),
-            memory_limit: String::from("100M"),
-            shell_path: "/bin/sh".to_string(),
-            workdir : "/".to_string()
-        }
-    }
-}
-
 
 
 pub fn run_sandbox(config: SandboxConfig) -> Result<(), String> {
@@ -76,32 +65,32 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<(), String> {
     println!("unshare executed successfully.");
 
     match unsafe { fork() } {
-Ok(ForkResult::Child) => {
-    let proc_path: String = format!("{}/proc", merged);
-    mount(Some("proc"), proc_path.as_str(), Some("proc"), MsFlags::empty(), None::<&str>)
-        .map_err(|e| format!("Mount /proc failed: {}", e))?;
+        Ok(ForkResult::Child) => {
+            let proc_path: String = format!("{}/proc", merged);
+            mount(Some("proc"), proc_path.as_str(), Some("proc"), MsFlags::empty(), None::<&str>)
+                .map_err(|e| format!("Mount /proc failed: {}", e))?;
 
-    chroot(merged.as_str())
-        .map_err(|e| format!("chroot failed: {}", e))?;
-    chdir(config.workdir.as_str())
-        .map_err(|e| format!("chdir failed: {}", e))?;
+            chroot(merged.as_str())
+                .map_err(|e| format!("chroot failed: {}", e))?;
+            chdir(config.workdir.as_str())
+                .map_err(|e| format!("chdir failed: {}", e))?;
 
-    let shell = CString::new(config.shell_path)
-                        .map_err(|e: std::ffi::NulError| format!("Invalid shell path CString: {}", e))?;
-    let arg0 = CString::new("sh")
-        .map_err(|e| format!("Invalid arg0 CString: {}", e))?;
-    execv(&shell, &[arg0])
-        .map_err(|e| format!("execv failed: {}", e))?;
-    println!("ForkResult::Child");
-    Ok(())
-}
-Ok(ForkResult::Parent { child, .. }) => {
-    let _ = nix::sys::wait::waitpid(child, None);
-    let _ = umount2(merged.as_str(), MntFlags::MNT_DETACH);
-    println!("ForkResult::Parent, child: {}, umount merged path {}",child, merged);
-    Ok(())
-}
-Err(e) => Err(format!("fork failed: {}", e)),
+            let shell = CString::new(config.shell_path.clone())
+                                .map_err(|e: std::ffi::NulError| format!("Invalid shell path CString: {}", e))?;
+            let arg0 = CString::new(config.shell_path)
+                .map_err(|e| format!("Invalid arg0 CString: {}", e))?;
+            execv(&shell, &[arg0])
+                .map_err(|e| format!("execv failed: {}", e))?;
+            println!("ForkResult::Child");
+            Ok(())
+        }
+        Ok(ForkResult::Parent { child, .. }) => {
+            let _ = nix::sys::wait::waitpid(child, None);
+            let _ = umount2(merged.as_str(), MntFlags::MNT_DETACH);
+            println!("ForkResult::Parent, child: {}, umount merged path {}",child, merged);
+            Ok(())
+        }
+        Err(e) => Err(format!("fork failed: {}", e)),
     }
 }
 

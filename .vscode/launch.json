@@ -1,19 +1,40 @@
 {
-    "version": "0.2.0",
-    "configurations": [
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "lldb",
+      "request": "launch",
+      "name": "Debug Rust",
+      "program": "${workspaceFolder}/target/debug/rustbox",
+      "args": [],
+      "initCommands": [
+        "platform select remote-linux",
+        "platform connect connect://127.0.0.1:12345"
+      ],
+      "cwd": "${workspaceFolder}",
+      "terminal": "integrated",
+      "sourceLanguages": [
+        "rust"
+      ]
+    },
+    {
+      "name": "C/C++ Runner: Debug Session",
+      "type": "cppdbg",
+      "request": "launch",
+      "args": [],
+      "stopAtEntry": false,
+      "externalConsole": false,
+      "cwd": "/home/azureuser/RustBox/rootfs/merged",
+      "program": "/home/azureuser/RustBox/rootfs/merged/build/Debug/outDebug",
+      "MIMode": "gdb",
+      "miDebuggerPath": "gdb",
+      "setupCommands": [
         {
-            "type": "lldb",                 // Or use "cppdbg" for GDB
-            "request": "launch",
-            "name": "Debug Rust",
-            "program": "${workspaceFolder}/target/debug/rustbox",
-            "args": [],
-            "initCommands": [
-                "platform select remote-linux",
-                "platform connect connect://127.0.0.1:12345"
-            ],
-            "cwd": "${workspaceFolder}",
-            "terminal": "integrated",
-            "sourceLanguages": ["rust"]
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
         }
-    ]
+      ]
+    }
+  ]
 }

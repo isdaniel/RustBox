@@ -7,5 +7,9 @@ edition = "2021"
 debug = true
 
 [dependencies]
-nix =  { version = "0.27", features = ["process", "mount", "sched", "fs"] }
-libc = "0.2"
+nix = { version = "0.30.1", features = ["process", "mount", "sched", "fs", "net", "hostname", "user", "signal"] }
+libc = "0.2.177"
+thiserror = "2.0.17"
+clap = { version = "4.5.48", features = ["derive"] }
+tracing = "0.1.41"
+tracing-subscriber = "0.3.20"
