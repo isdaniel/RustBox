@@ -13,8 +13,8 @@ struct Cli {
     #[arg(long, default_value = "./rootfs")]
     base_dir: String,
 
-    /// Memory limit (e.g., "256M")
-    #[arg(long, default_value = "256M")]
+    /// Memory limit (e.g., "128M")
+    #[arg(long, default_value = "128M")]
     memory: String,
 
     /// CPU limit as fraction of one core (e.g., "0.5" for 50% of one core)
