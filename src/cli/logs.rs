@@ -17,7 +17,7 @@ pub async fn execute(args: LogsArgs) -> Result<(), IpcError> {
 
     let request = DaemonRequest::LogsRequest {
         container_id: args.container_id.clone(),
-        tail: args.tail
+        tail: args.tail,
     };
 
     let response = client.send_request(request).await?;

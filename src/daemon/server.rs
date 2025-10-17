@@ -223,10 +223,7 @@ async fn process_request(
             },
         },
 
-        DaemonRequest::LogsRequest {
-            container_id,
-            tail
-        } => {
+        DaemonRequest::LogsRequest { container_id, tail } => {
             match container_manager.handle_logs(container_id, tail).await {
                 Ok(response) => response,
                 Err(e) => DaemonResponse::ErrorResponse {

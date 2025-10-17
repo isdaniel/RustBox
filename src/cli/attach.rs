@@ -19,12 +19,10 @@ pub async fn execute(args: AttachArgs) -> Result<(), IpcError> {
 
     // Connect to daemon
     tracing::debug!("Connecting to daemon socket");
-    let mut stream = UnixStream::connect(SOCKET_PATH)
-        .await
-        .map_err(|e| {
-            tracing::error!(error = %e, "Failed to connect to daemon");
-            IpcError::ConnectionFailed(e)
-        })?;
+    let mut stream = UnixStream::connect(SOCKET_PATH).await.map_err(|e| {
+        tracing::error!(error = %e, "Failed to connect to daemon");
+        IpcError::ConnectionFailed(e)
+    })?;
 
     tracing::debug!("Connected to daemon, sending attach request");
     // Send initial attach request

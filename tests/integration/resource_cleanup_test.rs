@@ -259,7 +259,7 @@ async fn test_cgroup_cleanup() {
     assert!(list_output.status.success(), "List should work after container completion");
     
     // In a real implementation, we would verify:
-    // 1. /sys/fs/cgroup/rustbox/<container-id>/ directory is removed
+    // 1. /sys/fs/cgroup/rustbox_<container-id>/ directory is removed
     // 2. Process is not consuming resources
     // 3. Memory limits are released
 }

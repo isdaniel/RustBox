@@ -1,8 +1,9 @@
+use crate::constants::OVERLAY_BASE_DIR;
+use crate::container::sandbox::umount_detach;
 use serde::{Deserialize, Serialize};
 use std::fs::{create_dir_all, remove_dir_all};
 use std::io;
 use std::path::PathBuf;
-use crate::constants::OVERLAY_BASE_DIR;
 
 /// Runtime configuration for a container
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -103,7 +104,9 @@ impl OverlayPaths {
             lower: rootfs_path.join("lowerdir"),
             upper: rootfs_path.join("upperdir"),
             work: rootfs_path.join("workdir"),
-            merged: PathBuf::from(OVERLAY_BASE_DIR).join(container_id).join("merged"),
+            merged: PathBuf::from(OVERLAY_BASE_DIR)
+                .join(container_id)
+                .join("merged"),
         }
     }
 
@@ -117,13 +120,19 @@ impl OverlayPaths {
 
     /// Clean up all directories (except lower & upper, which is shared)
     pub fn cleanup(&self) -> io::Result<()> {
-        // Remove work, merged directories
+        if self.merged.exists() {
+            // Use the shared umount_detach function which performs lazy unmount,with MNT_DETACH flag and handles errors gracefully
+            umount_detach(&self.merged);
+
+            // After unmounting, try to remove the directory
+            remove_dir_all(&self.merged)?;
+        }
+
+        // Remove work directory
         if self.work.exists() {
             remove_dir_all(&self.work)?;
         }
-        if self.merged.exists() {
-            remove_dir_all(&self.merged)?;
-        }
+
         Ok(())
     }
 }
@@ -201,14 +210,8 @@ mod tests {
     fn test_overlay_paths_new() {
         let paths = OverlayPaths::new("a3f7b2c4d5e6", "./rootfs");
         assert_eq!(paths.lower, PathBuf::from("./rootfs/lowerdir"));
-        assert_eq!(
-            paths.upper,
-            PathBuf::from(OVERLAY_BASE_DIR).join("a3f7b2c4d5e6/upper")
-        );
-        assert_eq!(
-            paths.work,
-            PathBuf::from(OVERLAY_BASE_DIR).join("a3f7b2c4d5e6/work")
-        );
+        assert_eq!(paths.upper, PathBuf::from("./rootfs/upperdir"));
+        assert_eq!(paths.work, PathBuf::from("./rootfs/workdir"));
         assert_eq!(
             paths.merged,
             PathBuf::from(OVERLAY_BASE_DIR).join("a3f7b2c4d5e6/merged")

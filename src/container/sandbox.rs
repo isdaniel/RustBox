@@ -1,20 +1,20 @@
+use crate::constants::CGROUP_BASE;
 use nix::{
     mount::{mount, umount2, MntFlags, MsFlags},
     pty::openpty,
     sched::{unshare, CloneFlags},
     sys::wait::waitpid,
-    unistd::{chdir, chroot, execv, fork, ForkResult},
+    unistd::{chdir, chroot, close, execv, fork, ForkResult},
 };
+use std::io::Write;
 use std::{
     ffi::CString,
-    fs::{create_dir_all, read_to_string, remove_dir, write},
+    fs::{create_dir_all, read_to_string, remove_dir, write, OpenOptions},
     os::unix::io::{IntoRawFd, RawFd},
     path::{Path, PathBuf},
     process,
 };
 use tracing::{error, info, warn};
-
-use crate::constants::CGROUP_BASE;
 
 #[derive(Debug, Clone)]
 pub struct SandboxConfig {
@@ -168,7 +168,7 @@ fn run_in_namespace_and_wait(
     if let Some(fd) = pty_slave_fd {
         info!("(namespaced parent) Received PTY slave_fd={}", fd);
     }
-    
+
     info!("Creating namespaces...");
     unshare(
         CloneFlags::CLONE_NEWNS
@@ -197,13 +197,9 @@ fn run_in_namespace_and_wait(
             // Redirect stdin/stdout/stderr
             // For TTY containers: redirect to PTY slave
             // For non-TTY containers: stdin -> /dev/null, stdout/stderr -> log files
-            use nix::unistd::close;
-            use std::fs::OpenOptions;
             if let Some(slave_fd) = pty_slave_fd {
                 // TTY container: redirect stdin/stdout/stderr to PTY slave
                 // DEBUG: Write to a debug file to see slave_fd value
-                use std::fs::OpenOptions;
-                use std::io::Write;
                 if let Ok(mut debug_file) = OpenOptions::new()
                     .create(true)
                     .append(true)
@@ -212,10 +208,14 @@ fn run_in_namespace_and_wait(
                     let _ = writeln!(debug_file, "[INNER CHILD] slave_fd={}", slave_fd);
                     // Check what slave_fd points to
                     if let Ok(link) = std::fs::read_link(format!("/proc/self/fd/{}", slave_fd)) {
-                        let _ = writeln!(debug_file, "[INNER CHILD] slave_fd {} points to: {:?}", slave_fd, link);
+                        let _ = writeln!(
+                            debug_file,
+                            "[INNER CHILD] slave_fd {} points to: {:?}",
+                            slave_fd, link
+                        );
                     }
                 }
-                
+
                 // SAFETY: Creating a new session and setting up PTY controlling terminal
                 // This is safe because:
                 // 1. We're in a freshly forked child process with no other threads
@@ -225,12 +225,14 @@ fn run_in_namespace_and_wait(
                     // Create a new session - this is required before TIOCSCTTY
                     // Without this, the PTY master will return EIO when trying to read/write
                     if libc::setsid() < 0 {
-                        tracing::error!("[ERROR] Inner child: Failed to create new session (setsid)");
+                        tracing::error!(
+                            "[ERROR] Inner child: Failed to create new session (setsid)"
+                        );
                         process::exit(1);
                     }
                     tracing::debug!("[DEBUG] Inner child: setsid() succeeded");
                 }
-                
+
                 // SAFETY: Manipulating file descriptors with close and dup2 is unsafe because:
                 // - We're directly manipulating OS-level file descriptor numbers
                 // - Invalid FD operations could affect other parts of the program
@@ -246,21 +248,33 @@ fn run_in_namespace_and_wait(
 
                     // Use libc::dup2 for raw file descriptors and check for errors
                     let ret0 = libc::dup2(slave_fd, 0);
-                    tracing::debug!("[DEBUG] Inner child: dup2({}, 0) returned {}", slave_fd, ret0);
+                    tracing::debug!(
+                        "[DEBUG] Inner child: dup2({}, 0) returned {}",
+                        slave_fd,
+                        ret0
+                    );
                     if ret0 < 0 {
                         tracing::error!("[ERROR] Inner child: Failed to dup2 PTY slave to stdin");
                         process::exit(1);
                     }
-                    
+
                     let ret1 = libc::dup2(slave_fd, 1);
-                    tracing::debug!("[DEBUG] Inner child: dup2({}, 1) returned {}", slave_fd, ret1);
+                    tracing::debug!(
+                        "[DEBUG] Inner child: dup2({}, 1) returned {}",
+                        slave_fd,
+                        ret1
+                    );
                     if ret1 < 0 {
                         tracing::error!("[ERROR] Inner child: Failed to dup2 PTY slave to stdout");
                         process::exit(1);
                     }
-                    
+
                     let ret2 = libc::dup2(slave_fd, 2);
-                    tracing::debug!("[DEBUG] Inner child: dup2({}, 2) returned {}", slave_fd, ret2);
+                    tracing::debug!(
+                        "[DEBUG] Inner child: dup2({}, 2) returned {}",
+                        slave_fd,
+                        ret2
+                    );
                     if ret2 < 0 {
                         tracing::error!("[ERROR] Inner child: Failed to dup2 PTY slave to stderr");
                         process::exit(1);
@@ -271,14 +285,20 @@ fn run_in_namespace_and_wait(
                     // This ioctl makes the PTY slave the controlling terminal for this session
                     // Without this, the PTY master/slave pair won't work properly for I/O
                     let ioctl_ret = libc::ioctl(0, libc::TIOCSCTTY, 0);
-                    tracing::debug!("[DEBUG] Inner child: ioctl(TIOCSCTTY) returned {}", ioctl_ret);
+                    tracing::debug!(
+                        "[DEBUG] Inner child: ioctl(TIOCSCTTY) returned {}",
+                        ioctl_ret
+                    );
                     if ioctl_ret < 0 {
                         tracing::error!("[ERROR] Inner child: Failed to set controlling terminal");
                         process::exit(1);
                     }
 
                     // Close the original PTY slave fd since we've duplicated it to 0, 1, 2
-                    tracing::debug!("[DEBUG] Inner child: Closing original slave_fd={}", slave_fd);
+                    tracing::debug!(
+                        "[DEBUG] Inner child: Closing original slave_fd={}",
+                        slave_fd
+                    );
                     close(slave_fd).ok();
                     tracing::debug!("[DEBUG] Inner child: PTY setup complete");
                 }
@@ -429,7 +449,7 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<SandboxResult, String> {
     let pty_result = if config.tty {
         match openpty(None, None) {
             Ok(pty) => {
-                info!("Created PTY master/slave pair");
+                info!("Created PTY master/slave pair, {:?}", pty);
                 Some(pty)
             }
             Err(e) => {
@@ -452,7 +472,10 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<SandboxResult, String> {
         Some(pty) => {
             let master_fd = pty.master.into_raw_fd();
             let slave_fd = pty.slave.into_raw_fd(); // Prevent slave from being auto-closed!
-            info!("Extracted PTY master_fd={}, slave_fd={}", master_fd, slave_fd);
+            info!(
+                "Extracted PTY master_fd={}, slave_fd={}",
+                master_fd, slave_fd
+            );
             (Some(master_fd), Some(slave_fd))
         }
         None => (None, None),

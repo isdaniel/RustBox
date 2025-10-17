@@ -48,7 +48,7 @@ async fn main() {
             .with_thread_ids(false)
             .with_file(false)
             .with_line_number(false)
-            .with_level(false)  // Hide the INFO/ERROR prefix
+            .with_level(false) // Hide the INFO/ERROR prefix
             .without_time()
             .init();
     }
