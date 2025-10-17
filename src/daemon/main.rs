@@ -3,6 +3,7 @@ mod pid_lock;
 mod server;
 mod signal_handler;
 
+use std::process;
 use pid_lock::PidLock;
 use server::DaemonServer;
 use signal_handler::setup_signal_handlers;
@@ -26,8 +27,8 @@ async fn main() {
         error!("Failed to acquire daemon lock: {}", e);
         error!("Another daemon instance may already be running.");
         error!("If you're sure no other instance is running, remove the PID file manually:");
-        error!("  sudo rm {}", rustbox::constants::PID_FILE_PATH);
-        std::process::exit(1);
+        error!("sudo rm {}", rustbox::constants::PID_FILE_PATH);
+        process::exit(1);
     }
 
     // Create shutdown channel
@@ -36,7 +37,7 @@ async fn main() {
     // Setup signal handlers for graceful shutdown
     if let Err(e) = setup_signal_handlers(shutdown_tx).await {
         error!("Failed to setup signal handlers: {}", e);
-        std::process::exit(1);
+        process::exit(1);
     }
 
     // Create and run the daemon server
@@ -46,15 +47,15 @@ async fn main() {
             if let Err(e) = server.run().await {
                 error!("Daemon server error: {}", e);
                 // PidLock will be automatically released when dropped
-                std::process::exit(1);
+                process::exit(1);
             }
             info!("RustBox daemon shutdown complete");
-            // PidLock will be automatically released when dropped
+            process::exit(0);
         }
         Err(e) => {
             error!("Failed to start daemon server: {}", e);
             // PidLock will be automatically released when dropped
-            std::process::exit(1);
+            process::exit(1);
         }
     }
 }

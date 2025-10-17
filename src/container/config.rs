@@ -115,12 +115,9 @@ impl OverlayPaths {
         Ok(())
     }
 
-    /// Clean up all directories (except lower, which is shared)
+    /// Clean up all directories (except lower & upper, which is shared)
     pub fn cleanup(&self) -> io::Result<()> {
-        // Remove upper, work, merged directories
-        if self.upper.exists() {
-            remove_dir_all(&self.upper)?;
-        }
+        // Remove work, merged directories
         if self.work.exists() {
             remove_dir_all(&self.work)?;
         }
