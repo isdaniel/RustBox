@@ -1,6 +1,5 @@
-use clap::Parser;
-use rustbox::{run_sandbox, SandboxConfig};
-use tracing_subscriber;
+use clap::{Parser, Subcommand};
+use rustbox::cli::*;
 
 #[derive(Parser, Debug)]
 #[command(
@@ -9,44 +8,65 @@ use tracing_subscriber;
     version = "0.1.0"
 )]
 struct Cli {
-    /// Base directory for the container filesystem
-    #[arg(long, default_value = "./rootfs")]
-    base_dir: String,
-
-    /// Memory limit (e.g., "128M")
-    #[arg(long, default_value = "128M")]
-    memory: String,
-
-    /// CPU limit as fraction of one core (e.g., "0.5" for 50% of one core)
-    #[arg(long, default_value = "1.0")]
-    cpu_limit: String,
-
-    /// Shell to execute
-    #[arg(long, default_value = "/bin/sh")]
-    shell: String,
-
-    /// Working directory
-    #[arg(long, default_value = "/")]
-    workdir: String,
+    #[command(subcommand)]
+    command: Commands,
 }
 
+#[derive(Subcommand, Debug)]
+enum Commands {
+    /// Create and start a new container
+    Run(RunArgs),
+    /// Stop a running container
+    Stop(StopArgs),
+    /// List containers
+    #[command(alias = "ps")]
+    List(ListArgs),
+    /// Display detailed information about a container
+    Inspect(InspectArgs),
+    /// Remove a stopped container
+    #[command(alias = "rm")]
+    Remove(RemoveArgs),
+    /// Fetch the logs of a container
+    Logs(LogsArgs),
+    /// Attach to a running container
+    Attach(AttachArgs),
+}
 
-fn main() -> Result<(), String> {
-    // Initialize tracing
-    tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
-        .init();
+#[tokio::main]
+async fn main() {
+    // Initialize tracing subscriber for CLI output
+    // Check if RUST_LOG is set for debug output, otherwise use clean format
+    if std::env::var("RUST_LOG").is_ok() {
+        tracing_subscriber::fmt()
+            .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
+            .init();
+    } else {
+        // Format without level prefix for cleaner output
+        tracing_subscriber::fmt()
+            .with_max_level(tracing::Level::INFO)
+            .with_target(false)
+            .with_thread_ids(false)
+            .with_file(false)
+            .with_line_number(false)
+            .with_level(false)  // Hide the INFO/ERROR prefix
+            .without_time()
+            .init();
+    }
 
     let cli = Cli::parse();
-    let config = SandboxConfig {
-        base_dir: cli.base_dir,
-        memory_limit: cli.memory,
-        cpu_limit: cli.cpu_limit,
-        shell_path: cli.shell,
-        workdir: cli.workdir,
+
+    let result = match cli.command {
+        Commands::Run(args) => run_command(args).await,
+        Commands::Stop(args) => stop_command(args).await,
+        Commands::List(args) => list_command(args).await,
+        Commands::Inspect(args) => inspect_command(args).await,
+        Commands::Remove(args) => remove_command(args).await,
+        Commands::Logs(args) => logs::execute(args).await,
+        Commands::Attach(args) => attach::execute(args).await,
     };
 
-    run_sandbox(config).map_err(|e| e.to_string())?;
-
-    Ok(())
+    if let Err(e) = result {
+        tracing::error!("Error: {e}");
+        std::process::exit(1);
+    }
 }
