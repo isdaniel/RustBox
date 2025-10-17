@@ -233,6 +233,28 @@ impl ContainerManager {
         std::path::Path::new(&format!("/proc/{pid}")).exists()
     }
 
+    /// Helper function to mark a container as exited and save metadata
+    /// 
+    /// This is a common pattern used when container startup fails or crashes.
+    /// It acquires the registry lock, marks the container as exited with the given
+    /// exit code, and persists the updated state to disk.
+    /// 
+    /// # Arguments
+    /// * `registry` - Shared registry lock
+    /// * `container_id` - ID of the container to mark as exited
+    /// * `exit_code` - Exit code to set (typically 1 for errors, 255 for unknown)
+    async fn mark_container_exited(
+        registry: Arc<RwLock<ContainerRegistry>>,
+        container_id: &str,
+        exit_code: i32,
+    ) {
+        let mut registry = registry.write().await;
+        if let Some(container) = registry.get_mut(container_id) {
+            let _ = container.mark_exited(exit_code);
+            let _ = save_metadata(container);
+        }
+    }
+
     /// Handle RunRequest
     pub async fn handle_run(
         &self,
@@ -286,9 +308,19 @@ impl ContainerManager {
             // Get log file paths
             let logs = ContainerLogs::new(cid.clone());
 
-            // Build sandbox config using rootfs_path as base_dir
+            // Ensure overlay directories are created before mounting
+            if let Err(e) = container_clone.overlay_paths.create_dirs() {
+                error!("Failed to create overlay directories for container {}: {}", cid, e);
+                Self::mark_container_exited(registry_clone.clone(), &cid, 1).await;
+                return;
+            }
+
+            // Build sandbox config using overlay paths from container
             let sandbox_config = SandboxConfig {
-                base_dir: container_clone.config.rootfs_path.clone(),
+                lower_dir: container_clone.overlay_paths.lower.clone(),
+                upper_dir: container_clone.overlay_paths.upper.clone(),
+                work_dir: container_clone.overlay_paths.work.clone(),
+                merged_dir: container_clone.overlay_paths.merged.clone(),
                 memory_limit: container_clone.config.memory_limit.clone(),
                 command: container_clone.config.command.clone(),
                 workdir: container_clone.config.workdir.clone(),
@@ -351,28 +383,16 @@ impl ContainerManager {
                         // Note: wait_and_cleanup doesn't currently return exit code
                         let exit_code = 0;
                         info!("Container {} exited with code: {}", cid2, exit_code);
-                        let mut registry = registry_clone2.write().await;
-                        if let Some(container) = registry.get_mut(&cid2) {
-                            let _ = container.mark_exited(exit_code);
-                            let _ = save_metadata(container);
-                        }
+                        Self::mark_container_exited(registry_clone2, &cid2, exit_code).await;
                     });
                 }
                 Ok(Err(e)) => {
                     error!("Container {} failed to start: {}", cid, e);
-                    let mut registry = registry_clone.write().await;
-                    if let Some(container) = registry.get_mut(&cid) {
-                        let _ = container.mark_exited(1);
-                        let _ = save_metadata(container);
-                    }
+                    Self::mark_container_exited(registry_clone.clone(), &cid, 1).await;
                 }
                 Err(e) => {
                     error!("Container {} start task panicked: {}", cid, e);
-                    let mut registry = registry_clone.write().await;
-                    if let Some(container) = registry.get_mut(&cid) {
-                        let _ = container.mark_exited(1);
-                        let _ = save_metadata(container);
-                    }
+                    Self::mark_container_exited(registry_clone.clone(), &cid, 1).await;
                 }
             }
         });

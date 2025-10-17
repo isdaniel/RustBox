@@ -18,7 +18,10 @@ use crate::constants::CGROUP_BASE;
 
 #[derive(Debug, Clone)]
 pub struct SandboxConfig {
-    pub base_dir: String,
+    pub lower_dir: PathBuf,
+    pub upper_dir: PathBuf,
+    pub work_dir: PathBuf,
+    pub merged_dir: PathBuf,
     pub memory_limit: String,
     pub command: Vec<String>,
     pub workdir: String,
@@ -408,12 +411,14 @@ pub struct SandboxCleanupPaths {
 pub fn run_sandbox(config: SandboxConfig) -> Result<SandboxResult, String> {
     info!("Starting run_sandbox with config: {:?}", config);
 
-    let lower = PathBuf::from(format!("{}/lowerdir", config.base_dir));
-    let upper = PathBuf::from(format!("{}/upperdir", config.base_dir));
-    let work = PathBuf::from(format!("{}/workdir", config.base_dir));
-    let merged = PathBuf::from(format!("{}/merged", config.base_dir));
+    // Use the overlay paths directly from config
+    let lower = &config.lower_dir;
+    let upper = &config.upper_dir;
+    let work = &config.work_dir;
+    let merged = &config.merged_dir;
 
-    ensure_dirs_exist(&[&lower, &upper, &work, &merged])?;
+    // Ensure all directories exist (lower should already exist from rootfs)
+    ensure_dirs_exist(&[upper, work, merged])?;
 
     mount_overlay(&lower, &upper, &work, &merged)?;
 
@@ -500,7 +505,7 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<SandboxResult, String> {
                 pty_master,
                 child_pid: child,
                 cleanup_paths: SandboxCleanupPaths {
-                    merged,
+                    merged: merged.clone(),
                     cgroup: cgroup_path,
                 },
             })

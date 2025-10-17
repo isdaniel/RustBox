@@ -98,12 +98,12 @@ pub struct OverlayPaths {
 impl OverlayPaths {
     /// Create paths for a new container
     pub fn new(container_id: &str, rootfs_base: &str) -> Self {
-        let overlay_base = PathBuf::from(OVERLAY_BASE_DIR).join(container_id);
+        let rootfs_path = PathBuf::from(rootfs_base);
         Self {
-            lower: PathBuf::from(rootfs_base).join("lowerdir"),
-            upper: overlay_base.join("upper"),
-            work: overlay_base.join("work"),
-            merged: overlay_base.join("merged"),
+            lower: rootfs_path.join("lowerdir"),
+            upper: rootfs_path.join("upperdir"),
+            work: rootfs_path.join("workdir"),
+            merged: PathBuf::from(OVERLAY_BASE_DIR).join(container_id).join("merged"),
         }
     }
 
