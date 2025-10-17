@@ -27,7 +27,10 @@ pub async fn list_command(args: ListArgs) -> Result<(), IpcError> {
             // Print header
             tracing::info!(
                 "{:<14} {:<20} {:<12} {:<10}",
-                "CONTAINER ID", "NAME", "STATE", "COMMAND"
+                "CONTAINER ID",
+                "NAME",
+                "STATE",
+                "COMMAND"
             );
 
             // Print each container

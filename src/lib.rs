@@ -43,7 +43,6 @@
 //! use rustbox::{run_sandbox, SandboxConfig};
 //!
 //! let config = SandboxConfig {
-//!     base_dir: "./rootfs".to_string(),
 //!     memory_limit: "256M".to_string(),
 //!     cpu_limit: "0.5".to_string(),
 //!     command: vec!["/bin/bash".to_string()],
@@ -51,6 +50,10 @@
 //!     stdout_log_path: None,
 //!     stderr_log_path: None,
 //!     tty: false,
+//!     lower_dir: todo!(),
+//!     upper_dir: todo!(),
+//!     work_dir: todo!(),
+//!     merged_dir: todo!(),
 //! };
 //!
 //! // Run a sandboxed container (requires root privileges)

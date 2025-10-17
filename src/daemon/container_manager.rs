@@ -1,21 +1,22 @@
+use nix::sys::signal;
+use nix::unistd::{dup, Pid};
+use rustbox::container::{
+    drain_cgroup_and_remove, run_sandbox, wait_and_cleanup, Container, ContainerConfig,
+    SandboxConfig,
+};
+use rustbox::error::{ContainerError, DaemonError};
+use rustbox::ipc::{read_request, write_response, ContainerSummary, DaemonRequest, DaemonResponse};
+use rustbox::storage::{delete_metadata, load_all_metadata, save_metadata, ContainerLogs};
 use std::collections::HashMap;
+use std::os::fd::{BorrowedFd, IntoRawFd};
 use std::os::unix::io::{AsRawFd, FromRawFd};
 use std::sync::Arc;
 use std::time::SystemTime;
-use std::os::fd::{BorrowedFd,IntoRawFd};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::UnixStream;
 use tokio::sync::RwLock;
 use tokio::task::JoinHandle;
 use tracing::{error, info, warn};
-use rustbox::container::{
-    drain_cgroup_and_remove, run_sandbox, Container, ContainerConfig, SandboxConfig, wait_and_cleanup
-};
-use rustbox::error::{ContainerError, DaemonError};
-use rustbox::ipc::{read_request, write_response, ContainerSummary, DaemonRequest, DaemonResponse};
-use rustbox::storage::{delete_metadata, load_all_metadata, save_metadata, ContainerLogs};
-use nix::sys::signal;
-use nix::unistd::{dup,Pid};
 
 /// Active attach session tracking
 ///
@@ -234,11 +235,11 @@ impl ContainerManager {
     }
 
     /// Helper function to mark a container as exited and save metadata
-    /// 
+    ///
     /// This is a common pattern used when container startup fails or crashes.
     /// It acquires the registry lock, marks the container as exited with the given
     /// exit code, and persists the updated state to disk.
-    /// 
+    ///
     /// # Arguments
     /// * `registry` - Shared registry lock
     /// * `container_id` - ID of the container to mark as exited
@@ -310,7 +311,10 @@ impl ContainerManager {
 
             // Ensure overlay directories are created before mounting
             if let Err(e) = container_clone.overlay_paths.create_dirs() {
-                error!("Failed to create overlay directories for container {}: {}", cid, e);
+                error!(
+                    "Failed to create overlay directories for container {}: {}",
+                    cid, e
+                );
                 Self::mark_container_exited(registry_clone.clone(), &cid, 1).await;
                 return;
             }
@@ -340,7 +344,10 @@ impl ContainerManager {
                 Ok(Ok(result)) => {
                     info!(
                         "Container {} started with PID {}, PTY master FD: {:?}, child_pid: {}",
-                        cid, result.child_pid, result.pty_master, result.child_pid.as_raw()
+                        cid,
+                        result.child_pid,
+                        result.pty_master,
+                        result.child_pid.as_raw()
                     );
 
                     // Update container with PTY master FD and PID immediately
@@ -350,13 +357,15 @@ impl ContainerManager {
                             container.pty_master = result.pty_master;
                             let _ = container.mark_started(result.child_pid.as_raw());
                             let _ = save_metadata(container);
-                            
+
                             // DEBUG: Verify PTY master FD is valid immediately after storing
                             if let Some(fd) = result.pty_master {
-                                
                                 match unsafe { BorrowedFd::borrow_raw(fd) }.try_clone_to_owned() {
                                     Ok(_) => {
-                                        info!("PTY master FD {} is valid immediately after storage", fd);
+                                        info!(
+                                            "PTY master FD {} is valid immediately after storage",
+                                            fd
+                                        );
                                     }
                                     Err(e) => {
                                         error!("PTY master FD {} is INVALID immediately after storage: {}", fd, e);
@@ -396,7 +405,6 @@ impl ContainerManager {
                 }
             }
         });
-
 
         Ok(DaemonResponse::RunResponse {
             container_id,

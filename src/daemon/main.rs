@@ -3,10 +3,10 @@ mod pid_lock;
 mod server;
 mod signal_handler;
 
-use std::process;
 use pid_lock::PidLock;
 use server::DaemonServer;
 use signal_handler::setup_signal_handlers;
+use std::process;
 use tokio::sync::mpsc;
 use tracing::{error, info};
 use tracing_subscriber::{filter::EnvFilter, fmt};

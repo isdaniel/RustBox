@@ -51,8 +51,8 @@ use std::path::PathBuf;
 pub use config::{ContainerConfig, OverlayPaths};
 pub use id::{generate_container_id, generate_container_name, validate_container_id};
 pub use sandbox::{
-    drain_cgroup_and_remove, run_sandbox, wait_and_cleanup, SandboxCleanupPaths, SandboxConfig,
-    SandboxResult,
+    drain_cgroup_and_remove, run_sandbox, umount_detach, wait_and_cleanup, SandboxCleanupPaths,
+    SandboxConfig, SandboxResult,
 };
 
 pub use state_machine::ContainerState;
@@ -172,9 +172,11 @@ impl Container {
         let id = generate_container_id();
         let name = name.unwrap_or_else(generate_container_name);
         let overlay_paths = OverlayPaths::new(&id, &config.rootfs_path);
-        let cgroup_path = PathBuf::from(crate::constants::CGROUP_BASE)
-            .join(crate::constants::CGROUP_NAMESPACE)
-            .join(&id);
+        let cgroup_path = PathBuf::from(crate::constants::CGROUP_BASE).join(format!(
+            "{}_{}",
+            crate::constants::CGROUP_NAMESPACE,
+            id
+        ));
 
         Container {
             id,
@@ -288,7 +290,10 @@ impl Container {
         if let Some(started_at) = self.started_at {
             if self.state.is_running() {
                 Some((Utc::now() - started_at).num_seconds())
-            } else { self.finished_at.map(|finished_at| (finished_at - started_at).num_seconds()) }
+            } else {
+                self.finished_at
+                    .map(|finished_at| (finished_at - started_at).num_seconds())
+            }
         } else {
             None
         }

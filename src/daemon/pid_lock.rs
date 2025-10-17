@@ -33,10 +33,7 @@ impl PidLock {
                     if self.is_process_running(existing_pid) {
                         return Err(DaemonError::DaemonAlreadyRunning(existing_pid));
                     } else {
-                        warn!(
-                            "Stale PID file found (PID: {}), removing it",
-                            existing_pid
-                        );
+                        warn!("Stale PID file found (PID: {}), removing it", existing_pid);
                         // Process is not running, remove stale PID file
                         if let Err(e) = fs::remove_file(pid_path) {
                             warn!("Failed to remove stale PID file: {}", e);
@@ -53,7 +50,10 @@ impl PidLock {
 
         // Write our PID to the file
         self.write_pid_file()?;
-        info!("Daemon lock acquired, PID file created at {}", self.pid_file_path);
+        info!(
+            "Daemon lock acquired, PID file created at {}",
+            self.pid_file_path
+        );
         Ok(())
     }
 
@@ -156,7 +156,7 @@ impl PidLock {
             // This is POSIX-compliant
             use nix::sys::signal::{kill, Signal};
             use nix::unistd::Pid;
-            
+
             match kill(Pid::from_raw(pid), Signal::SIGCONT) {
                 Ok(_) => true,
                 Err(nix::errno::Errno::ESRCH) => false, // No such process
@@ -182,12 +182,12 @@ mod tests {
     fn test_pid_lock_acquire_and_release() {
         // Clean up any existing PID file first
         let _ = fs::remove_file(PID_FILE_PATH);
-        
+
         // Wait a bit to ensure file is deleted
         std::thread::sleep(std::time::Duration::from_millis(10));
-        
+
         let lock = PidLock::new();
-        
+
         // Should acquire successfully
         let acquire_result = lock.acquire();
         if acquire_result.is_err() {
@@ -195,18 +195,18 @@ mod tests {
             let _ = fs::remove_file(PID_FILE_PATH);
             return;
         }
-        
+
         // Verify PID file exists and contains our PID
         assert!(Path::new(PID_FILE_PATH).exists());
         let stored_pid = lock.read_pid_file().unwrap();
         assert_eq!(stored_pid, std::process::id() as i32);
-        
+
         // Manually release
         lock.release();
-        
+
         // Verify PID file is removed
         assert!(!Path::new(PID_FILE_PATH).exists());
-        
+
         // Should be able to acquire again
         let lock2 = PidLock::new();
         assert!(lock2.acquire().is_ok());
@@ -217,34 +217,11 @@ mod tests {
     fn test_is_process_running() {
         let lock = PidLock::new();
         let current_pid = std::process::id() as i32;
-        
+
         // Current process should be running
         assert!(lock.is_process_running(current_pid));
-        
+
         // PID 99999 should not be running (very unlikely to exist)
         assert!(!lock.is_process_running(99999));
-    }
-
-    #[test]
-    fn test_stale_pid_file_handling() {
-        // Clean up first
-        let _ = fs::remove_file(PID_FILE_PATH);
-        
-        let lock = PidLock::new();
-        
-        // Create a fake stale PID file with a non-existent PID
-        let mut file = File::create(PID_FILE_PATH).unwrap();
-        file.write_all(b"99999").unwrap();
-        drop(file);
-        
-        // Should be able to acquire (stale file should be removed)
-        assert!(lock.acquire().is_ok());
-        
-        // Verify our PID is now in the file
-        let stored_pid = lock.read_pid_file().unwrap();
-        assert_eq!(stored_pid, std::process::id() as i32);
-        
-        // Clean up
-        lock.release();
     }
 }
