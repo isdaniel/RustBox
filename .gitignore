@@ -21,3 +21,25 @@ target/
 #.idea/
 
 rootfs/merged/*
+
+# Environment variables
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+
+# OS-specific
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+
+# IDE
+.vscode/
+.idea/
+
+# RustBox daemon runtime state
+/var/lib/rustbox/
+workdir/
