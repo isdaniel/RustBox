@@ -8,7 +8,6 @@ use std::io::Write;
 use std::path::{Path, PathBuf};
 
 /// Serializable container metadata for disk persistence
-/// Stored at /var/lib/rustbox/containers/<id>.json
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ContainerMetadata {
     pub id: String,

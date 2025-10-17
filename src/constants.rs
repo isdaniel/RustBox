@@ -23,6 +23,9 @@ pub const METADATA_DIR: &str = "/tmp/rustbox/containers";
 /// Base directory for container logs
 pub const LOG_BASE_DIR: &str = "/tmp/rustbox/logs";
 
+/// Base directory for overlay filesystem layers
+pub const OVERLAY_BASE_DIR: &str = "/var/lib/rustbox/overlay";
+
 // ============================================================================
 // Cgroup Paths
 // ============================================================================

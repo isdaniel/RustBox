@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fs::{create_dir_all, remove_dir_all};
 use std::io;
 use std::path::PathBuf;
+use crate::constants::OVERLAY_BASE_DIR;
 
 /// Runtime configuration for a container
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -97,7 +98,7 @@ pub struct OverlayPaths {
 impl OverlayPaths {
     /// Create paths for a new container
     pub fn new(container_id: &str, rootfs_base: &str) -> Self {
-        let overlay_base = PathBuf::from("/var/lib/rustbox/overlay").join(container_id);
+        let overlay_base = PathBuf::from(OVERLAY_BASE_DIR).join(container_id);
         Self {
             lower: PathBuf::from(rootfs_base).join("lowerdir"),
             upper: overlay_base.join("upper"),
@@ -205,15 +206,15 @@ mod tests {
         assert_eq!(paths.lower, PathBuf::from("./rootfs/lowerdir"));
         assert_eq!(
             paths.upper,
-            PathBuf::from("/var/lib/rustbox/overlay/a3f7b2c4d5e6/upper")
+            PathBuf::from(OVERLAY_BASE_DIR).join("a3f7b2c4d5e6/upper")
         );
         assert_eq!(
             paths.work,
-            PathBuf::from("/var/lib/rustbox/overlay/a3f7b2c4d5e6/work")
+            PathBuf::from(OVERLAY_BASE_DIR).join("a3f7b2c4d5e6/work")
         );
         assert_eq!(
             paths.merged,
-            PathBuf::from("/var/lib/rustbox/overlay/a3f7b2c4d5e6/merged")
+            PathBuf::from(OVERLAY_BASE_DIR).join("a3f7b2c4d5e6/merged")
         );
     }
 }

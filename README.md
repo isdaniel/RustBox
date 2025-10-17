@@ -4,7 +4,9 @@
 
 ## Overview
 
-**RustBox** is a production-ready container runtime that provides Docker-like functionality using:
+
+**RustBox** is a container runtime that isn't competing with (Docker or Kubernetes), we return to the core and build a simplest "Sandbox/isolated runtime environment" from the lowest level Linux kernel mechanisms (namespaces, cgroups, OverlayFS, etc.), provides Docker-like functionality using:
+
 - **Daemon Architecture** with Unix domain socket communication
 - **Multi-container Management** with persistent state
 - **OverlayFS** for isolated container filesystems  
