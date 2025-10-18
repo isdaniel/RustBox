@@ -5,7 +5,7 @@ use rustbox::container::{
     SandboxConfig,
 };
 use rustbox::error::{ContainerError, DaemonError};
-use rustbox::ipc::{read_request, write_response, ContainerSummary, DaemonRequest, DaemonResponse};
+use rustbox::ipc::{read_message, write_message, ContainerSummary, DaemonRequest, DaemonResponse};
 use rustbox::storage::{delete_metadata, load_all_metadata, save_metadata, ContainerLogs};
 use std::collections::HashMap;
 use std::os::fd::{BorrowedFd, IntoRawFd};
@@ -792,7 +792,7 @@ impl ContainerManager {
                         let response = DaemonResponse::AttachStdout {
                             data: buffer[..n].to_vec(),
                         };
-                        if let Err(e) = write_response(&mut stream_write, &response).await {
+                        if let Err(e) = write_message(&mut stream_write, &response).await {
                             tracing::error!(container_id = %container_id_clone, error = %e, "Failed to write to client");
                             break;
                         }
@@ -812,7 +812,7 @@ impl ContainerManager {
             tracing::debug!(container_id = %container_id_clone2, "Starting client→PTY forwarding task");
 
             loop {
-                match read_request(&mut stream_read).await {
+                match read_message(&mut stream_read).await {
                     Ok(DaemonRequest::AttachStdin { data }) => {
                         tracing::trace!(container_id = %container_id_clone2, bytes = data.len(), "Received stdin from client");
                         // Forward client input to PTY

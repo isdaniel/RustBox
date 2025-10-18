@@ -1,6 +1,6 @@
 use crate::constants::SOCKET_PATH;
 use crate::error::IpcError;
-use crate::ipc::{read_response, write_request, DaemonRequest, DaemonResponse};
+use crate::ipc::{read_message, write_message, DaemonRequest, DaemonResponse};
 use tokio::net::UnixStream;
 
 /// IPC client for communicating with the RustBox daemon
@@ -23,7 +23,7 @@ impl IpcClient {
         &mut self,
         request: DaemonRequest,
     ) -> Result<DaemonResponse, IpcError> {
-        write_request(&mut self.stream, &request).await?;
-        read_response(&mut self.stream).await
+        write_message(&mut self.stream, &request).await?;
+        read_message(&mut self.stream).await
     }
 }

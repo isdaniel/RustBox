@@ -1,6 +1,6 @@
 use crate::constants::SOCKET_PATH;
 use crate::error::IpcError;
-use crate::ipc::{read_response, write_request, DaemonRequest, DaemonResponse};
+use crate::ipc::{read_message, write_message, DaemonRequest, DaemonResponse};
 use clap::Args;
 use std::io::{self, Write};
 use termion::event::Key;
@@ -30,8 +30,8 @@ pub async fn execute(args: AttachArgs) -> Result<(), IpcError> {
         container_id: args.container_id.clone(),
     };
 
-    write_request(&mut stream, &request).await?;
-    let response = read_response(&mut stream).await?;
+    write_message(&mut stream, &request).await?;
+    let response = read_message(&mut stream).await?;
 
     match response {
         DaemonResponse::AttachResponse {
@@ -82,7 +82,7 @@ async fn streaming_attach_session(container_id: &str, stream: UnixStream) -> Res
     tracing::debug!("Spawning output forwarding task");
     let output_task = tokio::spawn(async move {
         loop {
-            match read_response(&mut stream_read).await {
+            match read_message(&mut stream_read).await {
                 Ok(DaemonResponse::AttachStdout { data }) => {
                     // Write container output to our stdout
                     if let Err(e) = io::stdout().write_all(&data) {
@@ -121,7 +121,7 @@ async fn streaming_attach_session(container_id: &str, stream: UnixStream) -> Res
                     tracing::info!("\r\nDetaching from container {container_id}\r");
                     // Send detach request
                     let detach_request = DaemonRequest::AttachDetach;
-                    if let Err(e) = write_request(&mut stream_write, &detach_request).await {
+                    if let Err(e) = write_message(&mut stream_write, &detach_request).await {
                         tracing::error!("Error sending detach request: {e}");
                     }
                     break;
@@ -132,7 +132,7 @@ async fn streaming_attach_session(container_id: &str, stream: UnixStream) -> Res
                         tracing::info!("\r\nExiting attach session\r");
                         // Send detach request
                         let detach_request = DaemonRequest::AttachDetach;
-                        let _ = write_request(&mut stream_write, &detach_request).await;
+                        let _ = write_message(&mut stream_write, &detach_request).await;
                         break;
                     }
                     Key::Char(c) => {
@@ -140,7 +140,7 @@ async fn streaming_attach_session(container_id: &str, stream: UnixStream) -> Res
                         let input_request = DaemonRequest::AttachStdin {
                             data: vec![c as u8],
                         };
-                        if let Err(e) = write_request(&mut stream_write, &input_request).await {
+                        if let Err(e) = write_message(&mut stream_write, &input_request).await {
                             tracing::error!("\r\nError sending input: {e}\r");
                             break;
                         }
@@ -150,7 +150,7 @@ async fn streaming_attach_session(container_id: &str, stream: UnixStream) -> Res
                         let input_request = DaemonRequest::AttachStdin {
                             data: vec![0x08], // ASCII backspace
                         };
-                        if let Err(e) = write_request(&mut stream_write, &input_request).await {
+                        if let Err(e) = write_message(&mut stream_write, &input_request).await {
                             tracing::error!("\r\nError sending backspace: {e}\r");
                             break;
                         }
@@ -166,7 +166,7 @@ async fn streaming_attach_session(container_id: &str, stream: UnixStream) -> Res
                         let input_request = DaemonRequest::AttachStdin {
                             data: vec![ctrl_byte],
                         };
-                        if let Err(e) = write_request(&mut stream_write, &input_request).await {
+                        if let Err(e) = write_message(&mut stream_write, &input_request).await {
                             tracing::error!("\r\nError sending control character: {e}\r");
                             break;
                         }

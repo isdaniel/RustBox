@@ -107,7 +107,7 @@ async fn handle_connection(
     container_manager: ContainerManager,
 ) -> Result<(), DaemonError> {
     // Read request
-    let request = read_message(&mut stream).await.map_err(DaemonError::Ipc)?;
+    let request: DaemonRequest = read_message(&mut stream).await.map_err(DaemonError::Ipc)?;
 
     info!("Received request: {:?}", request);
 

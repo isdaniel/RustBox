@@ -176,15 +176,14 @@ impl DaemonRequest {
     }
 }
 
-/// Read a length-prefixed JSON message from a stream
+/// Generic helper to read a length-prefixed JSON message from a stream
 ///
 /// Format: [4-byte length (u32, big-endian)][JSON payload]
-/// Read a length-prefixed JSON message from a stream (server-side: reads DaemonRequest)
-///
-/// Format: [4-byte length (u32, big-endian)][JSON payload]
-pub async fn read_message<R: AsyncReadExt + Unpin>(
-    reader: &mut R,
-) -> Result<DaemonRequest, IpcError> {
+pub async fn read_message<R, T>(reader: &mut R) -> Result<T, IpcError>
+where
+    R: AsyncReadExt + Unpin,
+    T: serde::de::DeserializeOwned,
+{
     // Read 4-byte length prefix (big-endian)
     let length = reader.read_u32().await?;
 
@@ -203,88 +202,14 @@ pub async fn read_message<R: AsyncReadExt + Unpin>(
     Ok(message)
 }
 
-/// Write a length-prefixed JSON message to a stream (server-side: writes DaemonResponse)
+/// Generic helper to write a length-prefixed JSON message to a stream
 ///
 /// Format: [4-byte length (u32, big-endian)][JSON payload]
-pub async fn write_message<W: AsyncWriteExt + Unpin>(
-    writer: &mut W,
-    message: &DaemonResponse,
-) -> Result<(), IpcError> {
-    // Serialize to JSON
-    let json = serde_json::to_vec(message)?;
-    let length = json.len() as u32;
-
-    // Write length prefix (big-endian)
-    writer.write_u32(length).await?;
-
-    // Write JSON payload
-    writer.write_all(&json).await?;
-    writer.flush().await?;
-
-    Ok(())
-}
-
-/// Read a length-prefixed JSON message from a stream (client-side: reads DaemonResponse)
-///
-/// Format: [4-byte length (u32, big-endian)][JSON payload]
-pub async fn read_response<R: AsyncReadExt + Unpin>(
-    reader: &mut R,
-) -> Result<DaemonResponse, IpcError> {
-    // Read 4-byte length prefix (big-endian)
-    let length = reader.read_u32().await?;
-
-    if length > 1_000_000 {
-        return Err(IpcError::InvalidFormat(format!(
-            "Message too large: {length} bytes"
-        )));
-    }
-
-    // Read JSON payload
-    let mut buffer = vec![0u8; length as usize];
-    reader.read_exact(&mut buffer).await?;
-
-    // Deserialize JSON
-    let message = serde_json::from_slice(&buffer)?;
-    Ok(message)
-}
-
-/// Write a length-prefixed JSON message to a stream (client-side: writes DaemonRequest)
-///
-/// Format: [4-byte length (u32, big-endian)][JSON payload]
-pub async fn write_request<W: AsyncWriteExt + Unpin>(
-    writer: &mut W,
-    message: &DaemonRequest,
-) -> Result<(), IpcError> {
-    // Serialize to JSON
-    let json = serde_json::to_vec(message)?;
-    let length = json.len() as u32;
-
-    // Write length prefix (big-endian)
-    writer.write_u32(length).await?;
-
-    // Write JSON payload
-    writer.write_all(&json).await?;
-    writer.flush().await?;
-
-    Ok(())
-}
-
-/// Read a length-prefixed JSON message from a stream (daemon-side: reads DaemonRequest)
-///
-/// Format: [4-byte length (u32, big-endian)][JSON payload]
-pub async fn read_request<R: AsyncReadExt + Unpin>(
-    reader: &mut R,
-) -> Result<DaemonRequest, IpcError> {
-    read_message(reader).await
-}
-
-/// Write a length-prefixed JSON message to a stream (daemon-side: writes DaemonResponse)
-///
-/// Format: [4-byte length (u32, big-endian)][JSON payload]  
-pub async fn write_response<W: AsyncWriteExt + Unpin>(
-    writer: &mut W,
-    message: &DaemonResponse,
-) -> Result<(), IpcError> {
+pub async fn write_message<W, T>(writer: &mut W, message: &T) -> Result<(), IpcError>
+where
+    W: AsyncWriteExt + Unpin,
+    T: serde::Serialize,
+{
     // Serialize to JSON
     let json = serde_json::to_vec(message)?;
     let length = json.len() as u32;
