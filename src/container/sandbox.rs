@@ -133,7 +133,7 @@ pub fn umount_detach(path: &Path) {
 fn mount_proc_and_dev(merged: &Path) -> Result<(), String> {
     let proc_path = merged.join("proc");
     create_dir_all(&proc_path)
-        .map_err(|e| format!("Failed to create {}: {}", proc_path.display(), e))?;
+        .map_err(|e| format!("Failed to create folder {}: {}", proc_path.display(), e))?;
     info!("Mounting /proc at: {}", proc_path.display());
     mount(
         Some("proc"),
