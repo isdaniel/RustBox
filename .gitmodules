@@ -1,0 +1,3 @@
+[submodule "rootfs/lowerdir"]
+	path = rootfs/lowerdir
+	url = git@github.com:isdaniel/lowerdir.git

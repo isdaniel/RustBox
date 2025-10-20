@@ -196,7 +196,41 @@ Created ──(start)──> Running ──(exit)──────> Exited
 ```bash
 git clone https://github.com/isdaniel/RustBox.git
 cd RustBox
+
+# Initialize and update submodules (required for rootfs)
+git submodule update --init --recursive
+
 cargo build --release
+```
+
+**Alternative - Clone with submodules in one step:**
+```bash
+git clone --recurse-submodules https://github.com/isdaniel/RustBox.git
+cd RustBox
+cargo build --release
+```
+
+### Working with Git Submodules
+
+This project uses git submodules to manage the container rootfs. The `rootfs/lowerdir` directory is a submodule pointing to a separate repository.
+
+#### Initial Setup
+
+If you've already cloned the repository without submodules:
+
+```bash
+# Initialize and clone the submodule
+git submodule update --init --recursive
+```
+
+#### Problem: Submodule directory is empty & Permission denied when cloning submodule
+
+Make sure you have SSH access to the submodule repository or use HTTPS:
+```bash
+# Convert submodule URL from SSH to HTTPS
+git config submodule.rootfs/lowerdir.url https://github.com/isdaniel/lowerdir.git
+git submodule sync
+git submodule update --init
 ```
 
 ### Binaries
