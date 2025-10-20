@@ -68,55 +68,55 @@ fn key_to_bytes(key: Key) -> Vec<u8> {
         // Regular character
         Key::Char('\n') => vec![b'\r'], // Convert newline to carriage return for TTY
         Key::Char(c) => vec![c as u8],
-        
+
         // Control characters
         Key::Ctrl(c) => {
             // Convert Ctrl+letter to control code (Ctrl+A = 1, Ctrl+B = 2, etc.)
             let ctrl_byte = (c as u8).wrapping_sub(b'a').wrapping_add(1);
             vec![ctrl_byte]
         }
-        
+
         // Alt characters (ESC followed by the character)
         Key::Alt(c) => vec![0x1B, c as u8],
-        
+
         // Special keys
         Key::Backspace => vec![0x08], // ASCII backspace (or 0x7F for some terminals)
         Key::Delete => vec![0x1B, b'[', b'3', b'~'], // ESC[3~
-        Key::Esc => vec![0x1B], // ESC key
-        Key::Null => vec![0x00], // NULL byte
-        
+        Key::Esc => vec![0x1B],       // ESC key
+        Key::Null => vec![0x00],      // NULL byte
+
         // Arrow keys - ANSI escape sequences
-        Key::Up => vec![0x1B, b'[', b'A'], // ESC[A
-        Key::Down => vec![0x1B, b'[', b'B'], // ESC[B
+        Key::Up => vec![0x1B, b'[', b'A'],    // ESC[A
+        Key::Down => vec![0x1B, b'[', b'B'],  // ESC[B
         Key::Right => vec![0x1B, b'[', b'C'], // ESC[C
-        Key::Left => vec![0x1B, b'[', b'D'], // ESC[D
-        
+        Key::Left => vec![0x1B, b'[', b'D'],  // ESC[D
+
         // Modified arrow keys
         Key::ShiftUp => vec![0x1B, b'[', b'1', b';', b'2', b'A'],
         Key::ShiftDown => vec![0x1B, b'[', b'1', b';', b'2', b'B'],
         Key::ShiftRight => vec![0x1B, b'[', b'1', b';', b'2', b'C'],
         Key::ShiftLeft => vec![0x1B, b'[', b'1', b';', b'2', b'D'],
-        
+
         Key::CtrlUp => vec![0x1B, b'[', b'1', b';', b'5', b'A'],
         Key::CtrlDown => vec![0x1B, b'[', b'1', b';', b'5', b'B'],
         Key::CtrlRight => vec![0x1B, b'[', b'1', b';', b'5', b'C'],
         Key::CtrlLeft => vec![0x1B, b'[', b'1', b';', b'5', b'D'],
-        
+
         Key::AltUp => vec![0x1B, b'[', b'1', b';', b'3', b'A'],
         Key::AltDown => vec![0x1B, b'[', b'1', b';', b'3', b'B'],
         Key::AltRight => vec![0x1B, b'[', b'1', b';', b'3', b'C'],
         Key::AltLeft => vec![0x1B, b'[', b'1', b';', b'3', b'D'],
-        
+
         // Navigation keys
         Key::Home => vec![0x1B, b'[', b'H'], // ESC[H or ESC[1~
-        Key::End => vec![0x1B, b'[', b'F'], // ESC[F or ESC[4~
+        Key::End => vec![0x1B, b'[', b'F'],  // ESC[F or ESC[4~
         Key::PageUp => vec![0x1B, b'[', b'5', b'~'], // ESC[5~
         Key::PageDown => vec![0x1B, b'[', b'6', b'~'], // ESC[6~
         Key::Insert => vec![0x1B, b'[', b'2', b'~'], // ESC[2~
-        
+
         Key::CtrlHome => vec![0x1B, b'[', b'1', b';', b'5', b'H'],
         Key::CtrlEnd => vec![0x1B, b'[', b'1', b';', b'5', b'F'],
-        
+
         // Function keys
         Key::F(1) => vec![0x1B, b'O', b'P'], // ESC OP
         Key::F(2) => vec![0x1B, b'O', b'Q'], // ESC OQ
@@ -135,10 +135,10 @@ fn key_to_bytes(key: Key) -> Vec<u8> {
             tracing::warn!("Unsupported function key F{}", n);
             vec![]
         }
-        
+
         // Tab keys
         Key::BackTab => vec![0x1B, b'[', b'Z'], // ESC[Z (Shift+Tab)
-        
+
         // This is safer than sending unknown sequences
         _ => {
             tracing::debug!("Ignoring unsupported key: {:?}", key);
