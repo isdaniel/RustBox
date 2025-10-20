@@ -17,7 +17,8 @@ _fstrim_module()
 		-*)
 			OPTS="--all
 				--fstab
-				--quiet
+				--listed-in
+				--quiet-unsupported
 				--offset
 				--length
 				--minimum

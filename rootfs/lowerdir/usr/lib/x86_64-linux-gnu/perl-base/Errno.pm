@@ -8,7 +8,7 @@ package Errno;
 require Exporter;
 use strict;
 
-our $VERSION = "1.30";
+our $VERSION = "1.33";
 $VERSION = eval $VERSION;
 our @ISA = 'Exporter';
 

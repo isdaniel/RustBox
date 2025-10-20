@@ -17,8 +17,8 @@ our @EXPORT_OK = qw(
   dualvar isdual isvstring looks_like_number openhandle readonly set_prototype
   tainted
 );
-our $VERSION    = "1.50";
-$VERSION   = eval $VERSION;
+our $VERSION    = "1.55";
+$VERSION =~ tr/_//d;
 
 require List::Util; # List::Util loads the XS
 List::Util->VERSION( $VERSION ); # Ensure we got the right XS version (RT#100863)

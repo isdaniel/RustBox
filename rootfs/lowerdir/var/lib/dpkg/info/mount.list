@@ -20,7 +20,10 @@
 /usr/share/doc/mount/NEWS.Debian.gz
 /usr/share/doc/mount/copyright
 /usr/share/doc/mount/examples
+/usr/share/doc/mount/examples/filesystems
+/usr/share/doc/mount/examples/fstab
 /usr/share/doc/mount/examples/mount.fstab
+/usr/share/doc/mount/mount.txt
 /usr/share/lintian
 /usr/share/lintian/overrides
 /usr/share/lintian/overrides/mount
@@ -33,6 +36,4 @@
 /usr/share/man/man8/swapon.8.gz
 /usr/share/man/man8/umount.8.gz
 /usr/share/doc/mount/changelog.Debian.gz
-/usr/share/doc/mount/examples/fstab
-/usr/share/doc/mount/mount.txt
 /usr/share/man/man8/swapoff.8.gz

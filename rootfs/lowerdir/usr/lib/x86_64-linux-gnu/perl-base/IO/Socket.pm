@@ -22,9 +22,11 @@ require IO::Socket::UNIX if ($^O ne 'epoc' && $^O ne 'symbian');
 
 our @ISA = qw(IO::Handle);
 
-our $VERSION = "1.40";
+our $VERSION = "1.46";
 
 our @EXPORT_OK = qw(sockatmark);
+
+our $errstr;
 
 sub import {
     my $pkg = shift;
@@ -81,7 +83,12 @@ sub socket {
 
     ${*$sock}{'io_socket_domain'} = $domain;
     ${*$sock}{'io_socket_type'}   = $type;
-    ${*$sock}{'io_socket_proto'}  = $protocol;
+
+    # "A value of 0 for protocol will let the system select an
+    # appropriate protocol"
+    # so we need to look up what the system selected,
+    # not cache PF_UNSPEC.
+    ${*$sock}{'io_socket_proto'} = $protocol if $protocol;
 
     $sock;
 }
@@ -114,7 +121,7 @@ sub connect {
 	if (defined $timeout && ($!{EINPROGRESS} || $!{EWOULDBLOCK})) {
 	    require IO::Select;
 
-	    my $sel = new IO::Select $sock;
+	    my $sel = IO::Select->new( $sock );
 
 	    undef $!;
 	    my($r,$w,$e) = IO::Select::select(undef,$sel,$sel,$timeout);
@@ -126,11 +133,11 @@ sub connect {
 		# set we now emulate the behavior in Linux
 		#    - Karthik Rajagopalan
 		$err = $sock->getsockopt(SOL_SOCKET,SO_ERROR);
-		$@ = "connect: $err";
+		$errstr = $@ = "connect: $err";
 	    }
 	    elsif(!@$w[0]) {
 		$err = $! || (exists &Errno::ETIMEDOUT ? &Errno::ETIMEDOUT : 1);
-		$@ = "connect: timeout";
+		$errstr = $@ = "connect: timeout";
 	    }
 	    elsif (!connect($sock,$addr) &&
                 not ($!{EISCONN} || ($^O eq 'MSWin32' &&
@@ -141,12 +148,12 @@ sub connect {
 		# Windows sets errno to WSAEINVAL (10022) (pre-5.19.4) or
 		# EINVAL (22) (5.19.4 onwards).
 		$err = $!;
-		$@ = "connect: $!";
+		$errstr = $@ = "connect: $!";
 	    }
 	}
         elsif ($blocking || !($!{EINPROGRESS} || $!{EWOULDBLOCK}))  {
 	    $err = $!;
-	    $@ = "connect: $!";
+	    $errstr = $@ = "connect: $!";
 	}
     }
 
@@ -178,25 +185,25 @@ sub blocking {
     #
     # which is used to set blocking behaviour.
 
-    # NOTE: 
+    # NOTE:
     # This is a little confusing, the perl keyword for this is
     # 'blocking' but the OS level behaviour is 'non-blocking', probably
     # because sockets are blocking by default.
     # Therefore internally we have to reverse the semantics.
 
     my $orig= !${*$sock}{io_sock_nonblocking};
-        
+
     return $orig unless @_;
 
     my $block = shift;
-    
+
     if ( !$block != !$orig ) {
         ${*$sock}{io_sock_nonblocking} = $block ? 0 : 1;
         ioctl($sock, 0x8004667e, pack("L!",${*$sock}{io_sock_nonblocking}))
             or return undef;
     }
-    
-    return $orig;        
+
+    return $orig;
 }
 
 sub close {
@@ -236,10 +243,10 @@ sub accept {
     if(defined $timeout) {
 	require IO::Select;
 
-	my $sel = new IO::Select $sock;
+	my $sel = IO::Select->new( $sock );
 
 	unless ($sel->can_read($timeout)) {
-	    $@ = 'accept: timeout';
+	    $errstr = $@ = 'accept: timeout';
 	    $! = (exists &Errno::ETIMEDOUT ? &Errno::ETIMEDOUT : 1);
 	    return;
 	}
@@ -275,14 +282,24 @@ sub send {
     @_ >= 2 && @_ <= 4 or croak 'usage: $sock->send(BUF, [FLAGS, [TO]])';
     my $sock  = $_[0];
     my $flags = $_[2] || 0;
-    my $peer  = $_[3] || $sock->peername;
+    my $peer;
 
-    croak 'send: Cannot determine peer address'
-	 unless(defined $peer);
+    if ($_[3]) {
+        # the caller explicitly requested a TO, so use it
+        # this is non-portable for "connected" UDP sockets
+        $peer = $_[3];
+    }
+    elsif (!defined getpeername($sock)) {
+        # we're not connected, so we require a peer from somewhere
+        $peer = $sock->peername;
 
-    my $r = defined(getpeername($sock))
-	? send($sock, $_[1], $flags)
-	: send($sock, $_[1], $flags, $peer);
+	croak 'send: Cannot determine peer address'
+	    unless(defined $peer);
+    }
+
+    my $r = $peer
+      ? send($sock, $_[1], $flags, $peer)
+      : send($sock, $_[1], $flags);
 
     # remember who we send to, if it was successful
     ${*$sock}{'io_socket_peername'} = $peer

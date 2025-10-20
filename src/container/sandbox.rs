@@ -6,13 +6,13 @@ use nix::{
     sys::wait::waitpid,
     unistd::{chdir, chroot, close, execv, fork, ForkResult},
 };
-use std::io::Write;
+use std::{fs::symlink_metadata, io::Write};
 use std::{
     ffi::CString,
-    fs::{create_dir_all, read_to_string, remove_dir, write, OpenOptions},
+    fs::{create_dir_all, read_to_string, remove_dir, write, read_dir, OpenOptions},
     os::unix::io::{IntoRawFd, RawFd},
     path::{Path, PathBuf},
-    process,
+    process
 };
 use tracing::{error, info, warn};
 
@@ -70,11 +70,11 @@ fn parse_cpu_limit(cpu_limit_str: &str) -> Result<String, String> {
     Ok(format!("{quota} {period}"))
 }
 
-pub fn generate_cgroup_path() -> PathBuf {
+fn generate_cgroup_path() -> PathBuf {
     Path::new(CGROUP_BASE).join(format!("rustbox_{}", process::id()))
 }
 
-pub fn setup_cgroup(config: &SandboxConfig, cgroup_path: &Path) -> Result<(), String> {
+fn setup_cgroup(config: &SandboxConfig, cgroup_path: &Path, pid: u32) -> Result<(), String> {
     create_dir_all(cgroup_path).map_err(|e| format!("failed to create cgroup path: {e}"))?;
 
     write(cgroup_path.join("memory.max"), config.memory_limit.clone())
@@ -84,7 +84,7 @@ pub fn setup_cgroup(config: &SandboxConfig, cgroup_path: &Path) -> Result<(), St
     write(cgroup_path.join("cpu.max"), cpu_quota)
         .map_err(|e| format!("Failed to set CPU limit: {e}"))?;
 
-    write(cgroup_path.join("cgroup.procs"), process::id().to_string())
+    write(cgroup_path.join("cgroup.procs"), pid.to_string())
         .map_err(|e| format!("Failed to add process to cgroup: {e}"))?;
 
     Ok(())
@@ -372,6 +372,13 @@ fn run_in_namespace_and_wait(
             );
             chdir(config.workdir.as_str()).map_err(|e| format!("chdir failed: {e}"))?;
 
+            // Only do this inside the container, after chroot/chdir
+            if let Err(e) = chown_recursive(Path::new("."), 65534, 65534) {
+                warn!("Failed to chown workdir recursively to nobody: {}", e);
+            } else {
+                info!("Successfully chowned workdir to nobody (65534:65534)");
+            }
+
             info!("(inner child) Executing command: {:?}", config.command);
             let program = CString::new(
                 config
@@ -413,6 +420,21 @@ fn run_in_namespace_and_wait(
         }
         Err(e) => Err(format!("inner fork failed: {e}")),
     }
+}
+
+// Recursively chown workdir to nobody (UID/GID 65534)
+fn chown_recursive(path: &Path, uid: u32, gid: u32) -> std::io::Result<()> {
+    let meta = symlink_metadata(path)?;
+    if let Some(p) = path.to_str() {
+        unsafe { libc::chown(p.as_ptr() as *const i8, uid, gid); }
+    }
+    if meta.is_dir() {
+        for entry in read_dir(path)? {
+            let entry = entry?;
+            chown_recursive(&entry.path(), uid, gid)?;
+        }
+    }
+    Ok(())
 }
 
 /// Result of starting a sandbox, containing PTY master FD and child PID
@@ -494,12 +516,11 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<SandboxResult, String> {
                 nix::unistd::close(master_fd).ok();
             }
 
-            // Set up cgroups in the child process AFTER fork
             info!(
                 "(namespaced parent) Setting up cgroups at: {}",
                 cgroup_path.display()
             );
-            if let Err(e) = setup_cgroup(&config, &cgroup_path) {
+            if let Err(e) = setup_cgroup(&config, &cgroup_path, process::id()) {
                 error!("(namespaced parent) Failed to setup cgroup: {}", e);
                 process::exit(1);
             }

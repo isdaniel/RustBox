@@ -45,6 +45,7 @@ _dmesg_module()
 		--color
 		--level
 		--console-level
+		--noescape
 		--nopager
 		--raw
 		--syslog
@@ -54,7 +55,10 @@ _dmesg_module()
 		--time-format
 		--userspace
 		--follow
+		--follow-new
 		--decode
+		--since
+		--until
 		--help
 		--version"
 	COMPREPLY=( $(compgen -W "${OPTS[*]}" -- $cur) )

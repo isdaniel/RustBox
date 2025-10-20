@@ -621,6 +621,8 @@ Description-el.UTF-8: Ο πυρήνας πρέπει να αναβαθμιστε
  Αυτή η έκδοση του GNU libc απαιτεί πυρήνα έκδοσης ${kernel_ver} ή νεότερο. Παρακαλώ αναβαθμίστε τον πυρήνα σας πριν εγκαταστήσετε το glibc.
 Description-fr.UTF-8: Mise à niveau du noyau nécessaire
  Cette version de la bibliothèque C de GNU nécessite au minimum la version ${kernel_ver} du noyau. Veuillez mettre le noyau à niveau avant l'installation de glibc.
+Description-it.UTF-8: È necessario aggiornare il kernel
+ Questa versione di GNU libc richiede che la versione del kernel sia ${kernel_ver} o successiva. Aggiornare il kernel prima di installare glibc.
 Description-ja.UTF-8: カーネルをアップグレードする必要があります
  このバージョンの GNU libc はカーネルバージョン ${kernel_ver} 以降が必要です。glibc をインストールする前にカーネルをアップグレードしてください。
 Description-nl.UTF-8: De kernel moet opgewaardeerd worden
@@ -646,9 +648,13 @@ Description-el.UTF-8: Η έκδοση του πυρήνα δεν υποστηρ�
  Αυτή η έκδοση του GNU libc απαιτεί πυρήνα έκδοσης ${kernel_ver} ή νεότερο. Οι παλαιότερες εκδόσεις ίσως λειτουργήσουν αλλά δεν υποστηρίζονται επίσημα από το Debian. Παρακαλώ σκεφτείτε να αναβαθμίσετε τον πυρήνα σας.
 Description-fr.UTF-8: Version du noyau non gérée
  Cette version de la bibliothèque C de GNU nécessite au minimum la version ${kernel_ver} du noyau. Des versions antérieures pourraient fonctionner, mais ne sont pas officiellement gérées par Debian. Veuillez prévoir la mise à niveau du noyau.
+Description-it.UTF-8: Versione del kernel non supportata
+ Questa versione di GNU libc richiede che la versione del kernel sia ${kernel_ver} o successiva. Potrebbe funzionare anche con le versioni precedenti ma non sono ufficialmente supportate da Debian. Si raccomanda di aggiornare il kernel.
 Description-nl.UTF-8: Niet-ondersteunde kernelversie
  Deze versie van GNU libc heeft kernel versie ${kernel_ver} of een meer recente versie nodig. Het kan zijn dat oudere versies wel werken, maar officieel wordt dit niet ondersteund door Debian. U zou er best aan doen uw kernel op te waarderen.
 Description-pt.UTF-8: Versão não suportada do kernel
  Esta versão da GNU libc requer a versão ${kernel_ver} ou mais recente. Versões mais antigas podem funcionar mas não são oficialmente suportadas pela Debian. Por favor, considere actualizar o kernel.
+Description-pt_BR.UTF-8: Versão de kernel não suportada
+ Essa versão da GNU libc requer um kernel versão ${kernel_ver} ou mais recente. Versões mais antigas poderão funcionar, mas não são suportadas oficialmente pelo Debian. Por favor, considere atualizar o seu kernel.
 Description-ru.UTF-8: Версия ядра не поддерживается
  Для данной версии GNU libc требуется ядро версии ${kernel_ver} или новее. Более старые версии могут работать, но они официально не поддерживаются в Debian. Рассмотрите возможность обновления ядра.

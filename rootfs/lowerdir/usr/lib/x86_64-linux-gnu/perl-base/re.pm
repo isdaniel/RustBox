@@ -4,11 +4,13 @@ package re;
 use strict;
 use warnings;
 
-our $VERSION     = "0.37";
+our $VERSION     = "0.41";
 our @ISA         = qw(Exporter);
-our @EXPORT_OK   = ('regmust',
-                    qw(is_regexp regexp_pattern
-                       regname regnames regnames_count));
+our @EXPORT_OK   = qw{
+	is_regexp regexp_pattern
+	regname regnames regnames_count
+	regmust optimization
+};
 our %EXPORT_OK = map { $_ => 1 } @EXPORT_OK;
 
 my %bitmask = (
@@ -54,33 +56,41 @@ sub setcolor {
 }
 
 my %flags = (
-    COMPILE         => 0x0000FF,
-    PARSE           => 0x000001,
-    OPTIMISE        => 0x000002,
-    TRIEC           => 0x000004,
-    DUMP            => 0x000008,
-    FLAGS           => 0x000010,
-    TEST            => 0x000020,
+    COMPILE           => 0x0000FF,
+    PARSE             => 0x000001,
+    OPTIMISE          => 0x000002,
+    TRIEC             => 0x000004,
+    DUMP              => 0x000008,
+    FLAGS             => 0x000010,
+    TEST              => 0x000020,
 
-    EXECUTE         => 0x00FF00,
-    INTUIT          => 0x000100,
-    MATCH           => 0x000200,
-    TRIEE           => 0x000400,
+    EXECUTE           => 0x00FF00,
+    INTUIT            => 0x000100,
+    MATCH             => 0x000200,
+    TRIEE             => 0x000400,
 
-    EXTRA           => 0xFF0000,
-    TRIEM           => 0x010000,
-    OFFSETS         => 0x020000,
-    OFFSETSDBG      => 0x040000,
-    STATE           => 0x080000,
-    OPTIMISEM       => 0x100000,
-    STACK           => 0x280000,
-    BUFFERS         => 0x400000,
-    GPOS            => 0x800000,
+    EXTRA             => 0x3FF0000,
+    TRIEM             => 0x0010000,
+    OFFSETS           => 0x0020000,
+    OFFSETSDBG        => 0x0040000,
+    STATE             => 0x0080000,
+    OPTIMISEM         => 0x0100000,
+    STACK             => 0x0280000,
+    BUFFERS           => 0x0400000,
+    GPOS              => 0x0800000,
+    DUMP_PRE_OPTIMIZE => 0x1000000,
+    WILDCARD          => 0x2000000,
 );
-$flags{ALL} = -1 & ~($flags{OFFSETS}|$flags{OFFSETSDBG}|$flags{BUFFERS});
+$flags{ALL} = -1 & ~($flags{OFFSETS}
+                    |$flags{OFFSETSDBG}
+                    |$flags{BUFFERS}
+                    |$flags{DUMP_PRE_OPTIMIZE}
+                    |$flags{WILDCARD}
+                    );
 $flags{All} = $flags{all} = $flags{DUMP} | $flags{EXECUTE};
 $flags{Extra} = $flags{EXECUTE} | $flags{COMPILE} | $flags{GPOS};
-$flags{More} = $flags{MORE} = $flags{All} | $flags{TRIEC} | $flags{TRIEM} | $flags{STATE};
+$flags{More} = $flags{MORE} =
+                    $flags{All} | $flags{TRIEC} | $flags{TRIEM} | $flags{STATE};
 $flags{State} = $flags{DUMP} | $flags{EXECUTE} | $flags{STATE};
 $flags{TRIE} = $flags{DUMP} | $flags{EXECUTE} | $flags{TRIEC};
 
@@ -113,6 +123,8 @@ sub bits {
     my $on = shift;
     my $bits = 0;
     my $turning_all_off = ! @_ && ! $on;
+    my $seen_Debug = 0;
+    my $seen_debug = 0;
     if ($turning_all_off) {
 
         # Pretend were called with certain parameters, which are best dealt
@@ -126,8 +138,15 @@ sub bits {
     foreach my $idx (0..$#_){
         my $s=$_[$idx];
         if ($s eq 'Debug' or $s eq 'Debugcolor') {
+            if (! $seen_Debug) {
+                $seen_Debug = 1;
+
+                # Reset to nothing, and then add what follows.  $seen_Debug
+                # allows, though unlikely someone would do it, more than one
+                # Debug and flags in the arguments
+                ${^RE_DEBUG_FLAGS} = 0;
+            }
             setcolor() if $s =~/color/i;
-            ${^RE_DEBUG_FLAGS} = 0 unless defined ${^RE_DEBUG_FLAGS};
             for my $idx ($idx+1..$#_) {
                 if ($flags{$_[$idx]}) {
                     if ($on) {
@@ -144,9 +163,13 @@ sub bits {
             _load_unload($on ? 1 : ${^RE_DEBUG_FLAGS});
             last;
         } elsif ($s eq 'debug' or $s eq 'debugcolor') {
+
+            # These default flags should be kept in sync with the same values
+            # in regcomp.h
+            ${^RE_DEBUG_FLAGS} = $flags{'EXECUTE'} | $flags{'DUMP'};
 	    setcolor() if $s =~/color/i;
 	    _load_unload($on);
-	    last;
+            $seen_debug = 1;
         } elsif (exists $bitmask{$s}) {
 	    $bits |= $bitmask{$s};
 	} elsif ($EXPORT_OK{$s}) {
@@ -255,9 +278,15 @@ sub bits {
 	                    : ($^H &= ~$flags_hint);
 	} else {
 	    require Carp;
-	    Carp::carp("Unknown \"re\" subpragma '$s' (known ones are: ",
+            if ($seen_debug && defined $flags{$s}) {
+                Carp::carp("Use \"Debug\" not \"debug\", to list debug types"
+                         . " in \"re\".  \"$s\" ignored");
+            }
+            else {
+                Carp::carp("Unknown \"re\" subpragma '$s' (known ones are: ",
                        join(', ', map {qq('$_')} 'debug', 'debugcolor', sort keys %bitmask),
                        ")");
+            }
 	}
     }
 

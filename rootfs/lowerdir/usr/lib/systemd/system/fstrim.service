@@ -5,9 +5,7 @@ ConditionVirtualization=!container
 
 [Service]
 Type=oneshot
-ExecStart=/sbin/fstrim --fstab --verbose --quiet
-ProtectSystem=strict
-ProtectHome=yes
+ExecStart=/sbin/fstrim --listed-in /etc/fstab:/proc/self/mountinfo --verbose --quiet-unsupported
 PrivateDevices=no
 PrivateNetwork=yes
 PrivateUsers=no

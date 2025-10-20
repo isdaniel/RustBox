@@ -5,7 +5,6 @@
 /etc
 /etc/debian_version
 /etc/default
-/etc/default/motd-news
 /etc/dpkg
 /etc/dpkg/origins
 /etc/dpkg/origins/debian

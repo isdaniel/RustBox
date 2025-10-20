@@ -3,7 +3,7 @@ tar, heavily based on John Gilmore's public domain version of tar,
 was originally written by Graham Todd.  It is now maintained by
 Paul Eggert <eggert@twinsun.com>.
 
-This package is maintained for Debian by Bdale Garbee <bdale@gag.com>, and
+This package is maintained for Debian by Janos Lenart <ocsi@debian.org>, and
 was built from the sources found at:
 
 	ftp://ftp.gnu.org/gnu/tar/

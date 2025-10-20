@@ -1,3 +1,3 @@
-c9bcb777096d1e60f7c48794e80702e4  lib/x86_64-linux-gnu/libudev.so.1.6.17
-3f77db4537022043d2a6dd8509718118  usr/share/doc/libudev1/changelog.Debian.gz
-013021fd8cdd4884a8cf41920e29221b  usr/share/doc/libudev1/copyright
+6b374f9b643333997fbe1d2bcf33f63a  usr/lib/x86_64-linux-gnu/libudev.so.1.7.2
+45649753ecdc3064ef59591a480136da  usr/share/doc/libudev1/changelog.Debian.gz
+5fd71804bb12490f8deac5dcd4d8a10d  usr/share/doc/libudev1/copyright

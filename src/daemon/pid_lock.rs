@@ -143,27 +143,7 @@ impl PidLock {
     /// Check if a process with the given PID is running
     /// Uses /proc filesystem on Linux
     fn is_process_running(&self, pid: i32) -> bool {
-        #[cfg(target_os = "linux")]
-        {
-            // Check if /proc/[pid] exists
-            let proc_path = format!("/proc/{}", pid);
-            Path::new(&proc_path).exists()
-        }
-
-        #[cfg(not(target_os = "linux"))]
-        {
-            // Fallback: use kill with signal 0 (no signal sent, just checks if process exists)
-            // This is POSIX-compliant
-            use nix::sys::signal::{kill, Signal};
-            use nix::unistd::Pid;
-
-            match kill(Pid::from_raw(pid), Signal::SIGCONT) {
-                Ok(_) => true,
-                Err(nix::errno::Errno::ESRCH) => false, // No such process
-                Err(nix::errno::Errno::EPERM) => true,  // Process exists but no permission
-                Err(_) => false,
-            }
-        }
+        Path::new(&format!("/proc/{}", pid)).exists()
     }
 }
 

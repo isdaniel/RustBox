@@ -13,6 +13,6 @@ proxy:*:13:13:proxy:/bin:/usr/sbin/nologin
 www-data:*:33:33:www-data:/var/www:/usr/sbin/nologin
 backup:*:34:34:backup:/var/backups:/usr/sbin/nologin
 list:*:38:38:Mailing List Manager:/var/list:/usr/sbin/nologin
-irc:*:39:39:ircd:/var/run/ircd:/usr/sbin/nologin
+irc:*:39:39:ircd:/run/ircd:/usr/sbin/nologin
 gnats:*:41:41:Gnats Bug-Reporting System (admin):/var/lib/gnats:/usr/sbin/nologin
 nobody:*:65534:65534:nobody:/nonexistent:/usr/sbin/nologin
