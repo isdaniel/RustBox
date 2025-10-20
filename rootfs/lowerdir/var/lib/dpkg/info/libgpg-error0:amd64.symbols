@@ -19,11 +19,8 @@ libgpg-error.so.0 libgpg-error0 #MINVER#
  gpg_strerror_r@GPG_ERROR_1.0 1.14
  gpg_strsource@GPG_ERROR_1.0 1.14
  gpgrt_abort@GPG_ERROR_1.0 1.34
- gpgrt_absfnameconcat@GPG_ERROR_1.0 1.38
- gpgrt_access@GPG_ERROR_1.0 1.42
  gpgrt_add_emergency_cleanup@GPG_ERROR_1.0 1.34
  gpgrt_argparse@GPG_ERROR_1.0 1.29
- gpgrt_argparser@GPG_ERROR_1.0 1.38
  gpgrt_asprintf@GPG_ERROR_1.0 1.14
  gpgrt_b64dec_finish@GPG_ERROR_1.0 1.27
  gpgrt_b64dec_proc@GPG_ERROR_1.0 1.27
@@ -38,7 +35,6 @@ libgpg-error.so.0 libgpg-error0 #MINVER#
  gpgrt_clearerr@GPG_ERROR_1.0 1.14
  gpgrt_clearerr_unlocked@GPG_ERROR_1.0 1.14
  gpgrt_cmp_version@GPG_ERROR_1.0 1.33
- gpgrt_fcancel@GPG_ERROR_1.0 1.42
  gpgrt_fclose@GPG_ERROR_1.0 1.14
  gpgrt_fclose_snatch@GPG_ERROR_1.0 1.14
  gpgrt_fdopen@GPG_ERROR_1.0 1.14
@@ -55,7 +51,6 @@ libgpg-error.so.0 libgpg-error0 #MINVER#
  gpgrt_flockfile@GPG_ERROR_1.0 1.14
  gpgrt_fname_get@GPG_ERROR_1.0 1.14
  gpgrt_fname_set@GPG_ERROR_1.0 1.14
- gpgrt_fnameconcat@GPG_ERROR_1.0 1.38
  gpgrt_fopen@GPG_ERROR_1.0 1.14
  gpgrt_fopencookie@GPG_ERROR_1.0 1.14
  gpgrt_fopenmem@GPG_ERROR_1.0 1.14
@@ -126,11 +121,9 @@ libgpg-error.so.0 libgpg-error0 #MINVER#
  gpgrt_read@GPG_ERROR_1.0 1.14
  gpgrt_read_line@GPG_ERROR_1.0 1.14
  gpgrt_realloc@GPG_ERROR_1.0 1.28
- gpgrt_reallocarray@GPG_ERROR_1.0 1.38
  gpgrt_rewind@GPG_ERROR_1.0 1.14
  gpgrt_set_alloc_func@GPG_ERROR_1.0 1.14
  gpgrt_set_binary@GPG_ERROR_1.0 1.14
- gpgrt_set_confdir@GPG_ERROR_1.0 1.38
  gpgrt_set_fixed_string_mapper@GPG_ERROR_1.0 1.29
  gpgrt_set_nonblock@GPG_ERROR_1.0 1.21
  gpgrt_set_strusage@GPG_ERROR_1.0 1.29

@@ -53,7 +53,7 @@ while :; do
   --h*) printf '%s\n' "$usage"   || exit 2; exit;;
   --v*) printf '%s\n' "$version" || exit 2; exit;;
   --) shift; break;;
-  -*\'*) cmp="$cmp '"`printf '%sX\n' "$1" | LC_ALL=C sed "$escape"`;;
+  -*\'*) cmp="$cmp '"`printf '%sX\n' "$1" | sed "$escape"`;;
   -?*) cmp="$cmp '$1'";;
   *) break;;
   esac
@@ -72,7 +72,7 @@ exec 3>&1
 if test $# -eq 1; then
   case $1 in
   *[-.]gz* | *[-.][zZ] | *.t[ga]z)
-    FILE=`LC_ALL=C expr "X$1" : 'X\(.*\)[-.][zZtga]*$'`
+    FILE=`expr "X$1" : 'X\(.*\)[-.][zZtga]*$'`
     gzip_status=$(
       exec 4>&1
       (gzip -cd -- "$1" 4>&-; echo $? >&4) 3>&- | eval "$cmp" - '"$FILE"' >&3

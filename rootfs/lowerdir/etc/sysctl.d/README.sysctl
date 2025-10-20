@@ -12,5 +12,5 @@ My personal preference would be for local system settings to go into
 of the file, anything will work. See sysctl.conf(8) man page for details
 of the format.
 
-After making any changes, please run "service procps force-reload" (or, from
+After making any changes, please run "service procps reload" (or, from
 a Debian package maintainer script "deb-systemd-invoke restart procps.service").

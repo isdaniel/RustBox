@@ -39,7 +39,7 @@ _apt()
         "list"
         "search"
         "show" "showsrc"
-        "install" "reinstall" "remove" "purge" "autoremove" "autopurge"
+        "install" "remove" "purge" "autoremove" "autopurge"
         "update"
         "upgrade" "full-upgrade" "dist-upgrade"
         "edit-sources"
@@ -52,8 +52,8 @@ _apt()
         "policy")
 
     local command i
-    for (( i=1; i < ${#words[@]}; i++ )); do
-        if [[ " ${COMMANDS[*]} " == *" ${words[i]} "* ]]; then
+    for (( i=0; i < ${#words[@]}-1; i++ )); do
+        if [[ ${COMMANDS[@]} =~ ${words[i]} ]]; then
             command=${words[i]}
             break
         fi
@@ -62,16 +62,15 @@ _apt()
     # Complete a -t<SPACE><TAB>
     case $prev in
         -t|--target-release)
-            COMPREPLY=( $( compgen -W "$(apt-cache policy | grep -Eo 'a=[^,]*|n=[^,]*' | cut -f2- -d= | sort -u)" -- "$cur" ) )
+            COMPREPLY=( $( compgen -W "$(apt-cache policy | egrep -o 'a=[^,]*|n=[^,]*' | cut -f2- -d= | sort -u)" -- "$cur" ) )
             return 0
             ;;
     esac
 
-    # When the cursor (cword) is before the command word (i), only suggest
-    # options but not package or file names:
-    if [[ $cur == -* || ( -v command && $cword -le $i ) ]]; then
-        case ${command-} in
-            install|reinstall|remove|purge|upgrade|dist-upgrade|full-upgrade|autoremove|autopurge)
+    # supported options per command
+    if [[ "$cur" == -* ]]; then
+        case $command in
+            install|remove|purge|upgrade|dist-upgrade|full-upgrade|autoremove)
                 COMPREPLY=( $( compgen -W '--show-progress
                   --fix-broken --purge --verbose-versions --auto-remove
                   -s --simulate --dry-run
@@ -168,14 +167,12 @@ _apt()
                 return 0
                 ;;
         esac
-
-        return
     fi
 
     # specific command arguments
-    if [[ -v command ]]; then
+    if [[ -n $command ]]; then
         case $command in
-            remove|purge|autoremove|autopurge)
+            remove|purge|autoremove)
                 if [[ -f /etc/debian_version ]]; then
                     # Debian system
                     COMPREPLY=( $( \
@@ -191,23 +188,18 @@ _apt()
                     2> /dev/null ) )
                 return 0
                 ;;
-            install|reinstall)
-                if [[ "$cur" == .* || "$cur" == /* || "$cur" == ~* ]]; then
+            install)
+                COMPREPLY=( $( apt-cache --no-generate pkgnames "$cur" \
+                    2> /dev/null ) )
+                if [[ "$cur" == ./* || "$cur" == /* ]]; then
                     _filedir "deb"
-                else
-                    COMPREPLY=( $( apt-cache --no-generate pkgnames "$cur" \
-                        2> /dev/null ) )
                 fi
                 return 0
                 ;;
             source|build-dep|showsrc|policy)
-                if [[ "$command" == build-dep && ( "$cur" == .* || "$cur" == /* || "$cur" == ~* ) ]]; then
-                    _filedir "dsc"
-                else
-                    COMPREPLY=( $( apt-cache --no-generate pkgnames "$cur" \
-                        2> /dev/null ) $( apt-cache dumpavail | \
-                        command grep "^Source: $cur" | sort -u | cut -f2 -d" " ) )
-                fi
+                COMPREPLY=( $( apt-cache --no-generate pkgnames "$cur" \
+                    2> /dev/null ) $( apt-cache dumpavail | \
+                    command grep "^Source: $cur" | sort -u | cut -f2 -d" " ) )
                 return 0
                 ;;
             edit-sources)
@@ -221,8 +213,10 @@ _apt()
                 return 0
                 ;;
         esac
-    else
-        # no command yet, show what commands we have
+    fi
+
+    # no command yet, show what commands we have
+    if [ "$command" = "" ]; then
         COMPREPLY=( $( compgen -W '${COMMANDS[@]}' -- "$cur" ) )
     fi
 

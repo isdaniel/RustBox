@@ -4,8 +4,8 @@
 # Author          : Johan Vromans
 # Created On      : Tue Sep 11 15:00:12 1990
 # Last Modified By: Johan Vromans
-# Last Modified On: Tue Aug 18 14:48:05 2020
-# Update Count    : 1739
+# Last Modified On: Sat May 27 12:11:39 2017
+# Update Count    : 1715
 # Status          : Released
 
 ################ Module Preamble ################
@@ -18,10 +18,10 @@ use warnings;
 package Getopt::Long;
 
 use vars qw($VERSION);
-$VERSION        =  2.52;
+$VERSION        =  2.50;
 # For testing versions only.
 use vars qw($VERSION_STRING);
-$VERSION_STRING = "2.52";
+$VERSION_STRING = "2.50";
 
 use Exporter;
 use vars qw(@ISA @EXPORT @EXPORT_OK);
@@ -303,7 +303,7 @@ sub GetOptionsFromArray(@) {
 	# Avoid some warnings if debugging.
 	local ($^W) = 0;
 	print STDERR
-	  ("Getopt::Long $Getopt::Long::VERSION_STRING ",
+	  ("Getopt::Long $Getopt::Long::VERSION ",
 	   "called from package \"$pkg\".",
 	   "\n  ",
 	   "argv: ",
@@ -538,7 +538,6 @@ sub GetOptionsFromArray(@) {
 	    while ( defined $arg ) {
 
 		# Get the canonical name.
-		my $given = $opt;
 		print STDERR ("=> cname for \"$opt\" is ") if $debug;
 		$opt = $ctl->[CTL_CNAME];
 		print STDERR ("\"$ctl->[CTL_CNAME]\"\n") if $debug;
@@ -607,7 +606,6 @@ sub GetOptionsFromArray(@) {
 				&{$linkage{$opt}}
 				  (Getopt::Long::CallBack->new
 				   (name    => $opt,
-				    given   => $given,
 				    ctl     => $ctl,
 				    opctl   => \%opctl,
 				    linkage => \%linkage,
@@ -771,7 +769,7 @@ sub GetOptionsFromArray(@) {
     }
 
     # Finish.
-    if ( @ret && ( $order == $PERMUTE || $passthrough ) ) {
+    if ( @ret && $order == $PERMUTE ) {
 	#  Push back accumulated arguments
 	print STDERR ("=> restoring \"", join('" "', @ret), "\"\n")
 	    if $debug;
@@ -807,8 +805,10 @@ sub ParseOptionSpec ($$) {
 		   (
 		     # Option name
 		     (?: \w+[-\w]* )
+		     # Alias names, or "?"
+		     (?: \| (?: \? | \w[-\w]* ) )*
 		     # Aliases
-		     (?: \| (?: . [^|!+=:]* )? )*
+		     (?: \| (?: [^-|!+=:][^|!+=:]* )? )*
 		   )?
 		   (
 		     # Either modifiers ...
@@ -1145,7 +1145,7 @@ sub FindOption ($$$$$) {
 	 : !(defined $rest || @$argv > 0) ) {
 	# Complain if this option needs an argument.
 #	if ( $mand && !($type eq 's' ? defined($optarg) : 0) ) {
-	if ( $mand || $ctl->[CTL_DEST] == CTL_DEST_HASH ) {
+	if ( $mand ) {
 	    return (0) if $passthrough;
 	    warn ("Option ", $opt, " requires an argument\n");
 	    $error++;
@@ -1547,7 +1547,7 @@ sub setup_pa_args($@) {
 
 # Sneak way to know what version the user requested.
 sub VERSION {
-    $requested_version = $_[1] if @_ > 1;
+    $requested_version = $_[1];
     shift->SUPER::VERSION(@_);
 }
 
@@ -1561,11 +1561,6 @@ sub new {
 sub name {
     my $self = shift;
     ''.$self->{name};
-}
-
-sub given {
-    my $self = shift;
-    $self->{given};
 }
 
 use overload

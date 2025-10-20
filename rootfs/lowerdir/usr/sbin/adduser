@@ -35,7 +35,7 @@ use Debian::AdduserCommon;
 use Getopt::Long;
 
 
-my $version = "3.118ubuntu5";
+my $version = "3.118ubuntu2";
 
 ###################
 # return values
@@ -371,11 +371,7 @@ if ($action eq "addusertogroup") {
 	if $verbose;
     &invalidate_nscd();
     my $gpasswd = &which('gpasswd');
-    if ( ($use_extrausers) || ($config{"use_extrausers"}) ) {
-        &systemcall($gpasswd, '--extrausers', '-a',$existing_user,$existing_group);
-    } else {
-        &systemcall($gpasswd, '-a',$existing_user,$existing_group);
-    }
+    &systemcall($gpasswd, '-a',$existing_user,$existing_group);
     &invalidate_nscd();
     print (gtx("Done.\n")) if $verbose;
     exit RET_OK;
@@ -645,15 +641,9 @@ if ($action eq "adduser") {
                 if $verbose;
             &invalidate_nscd();
             my $gpasswd = &which('gpasswd');
-            if ( ($use_extrausers) || ($config{"use_extrausers"}) ) {
-                &systemcall($gpasswd, '--extrausers', '-M',
-                            join(',', get_group_members($newgrp), $new_name),
-                            $newgrp);
-            } else {
-                &systemcall($gpasswd, '-M',
-                            join(',', get_group_members($newgrp), $new_name),
-                            $newgrp);
-            }
+            &systemcall($gpasswd, '-M',
+                        join(',', get_group_members($newgrp), $new_name),
+                        $newgrp);
             &invalidate_nscd();
         }
     }

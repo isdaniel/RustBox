@@ -6,6 +6,3 @@ libpam0g: package-name-doesnt-match-sonames libpam0 libpam-misc0 libpamc0
 # before
 libpam0g: no-debconf-config
 libpam0g: postinst-uses-db-input
-# Yes, we want to use systemctl; if the service is running we do need
-# to restart it. We have already asked the admin.
-libpam0g: maintainer-script-calls-systemctl

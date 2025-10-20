@@ -14,12 +14,6 @@ libseccomp.so.2 libseccomp2 #MINVER#
  seccomp_init@Base 0.0.0~20120605
  seccomp_load@Base 0.0.0~20120605
  seccomp_merge@Base 1.0.1
- seccomp_notify_alloc@Base 2.5.0
- seccomp_notify_fd@Base 2.5.0
- seccomp_notify_free@Base 2.5.0
- seccomp_notify_id_valid@Base 2.5.0
- seccomp_notify_receive@Base 2.5.0
- seccomp_notify_respond@Base 2.5.0
  seccomp_release@Base 0.0.0~20120605
  seccomp_reset@Base 0.0.0~20120605
  seccomp_rule_add@Base 0.0.0~20120605

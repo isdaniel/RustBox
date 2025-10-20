@@ -44,9 +44,6 @@ sub init {
 		mkdir $directory || $this->error("mkdir $directory:$!");
 	}
 
-	if (exists $this->{root}) {
-		$this->{filename} = $this->{root} . $this->{filename};
-	}
 	$this->{filename} = abs_path($this->{filename});
 
 	debug "db $this->{name}" => "started; filename is $this->{filename}";

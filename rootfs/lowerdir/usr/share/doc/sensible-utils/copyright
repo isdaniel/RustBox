@@ -1,39 +1,34 @@
 Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: sensible-utils
-Source: https://salsa.debian.org/debian/sensible-utils
+Upstream-Contact: Anibal Monsalve Salazar <anibal@debian.org>
+Source: https://alioth.debian.org/projects/collab-maint/sensible-utils.git
 
 Files: *
 Copyright: 2002-2009, Clint Adams <schizo@debian.org>
-           2010- Anibal Monsalve Salazar <anibal@debian.org>
-           2012, David Prévot <taffit@debian.org>
-           2013, Thorsten Glaser
-           2017, Jérémy Bobbio
-           2017, Ximin Luo
-           2017- Bastien Roucariès <rouca@debian.org>
+	   2010- Anibal Monsalve Salazar <anibal@debian.org>
+	   2012, David Prévot <taffit@debian.org>
+	   2013, Thorsten Glaser
+	   2017, Jérémy Bobbio
+	   2017, Ximin Luo
+	   2017- Bastien Roucariès <rouca@debian.org>
 License: GPL-2+
 
 Files: sensible-editor*
 Copyright: 1997,  Guy Maor
  2002, 2004, 2006,  Clint Adams
- 2007 Jari Aalto
  2010- Anibal Monsalve Salazar <anibal@debian.org>
- 2017- Bastien Roucariès <rouca@debian.org>
 License: GPL-2+
 
 Files: sensible-pager*
 Copyright: 1997, 1998,  Guy Maor
  2004,  Clint Adams
- 2007 Jari Aalto
  2010- Anibal Monsalve Salazar <anibal@debian.org>
- 2017- Bastien Roucariès <rouca@debian.org>
 License: GPL-2+
 
 Files: sensible-browser*
 Copyright: 2002,  Joey Hess
  2003, 2007, 2008,  Clint Adams
- 2007 Jaari Aalto
  2010- Anibal Monsalve Salazar <anibal@debian.org>
- 2017- Bastien Roucariès <rouca@debian.org>
 License: GPL-2+
 
 Files: select-editor*
@@ -57,7 +52,6 @@ License: GPL-2+
 
 Files: man/po4a/fr*
 Copyright: Nicolas François <nicolas.francois@centraliens.net>
- 2017- Bastien Roucariès
 License: GPL-2+
 
 Files: man/po4a/es*
@@ -95,11 +89,7 @@ License: configure
  gives unlimited permission to copy, distribute and modify it.
 
 Files: build-aux/missing
-Copyright: 1996-2020, Free Software Foundation, Inc.
-License: GPL-2+
-
-Files: build-aux/test-driver
-Copyright: 2011-2020, Free Software Foundation, Inc.
+Copyright: 1996-2014, Free Software Foundation, Inc.
 License: GPL-2+
 
 Files: build-aux/install-sh

@@ -1,7 +1,7 @@
-a407fda557eed5ac72542a8f90f865d2  usr/bin/mawk
+2567a7e235c45edf2df3d973b491fc43  usr/bin/mawk
 5f141143c36933d1212238a986f7a3b6  usr/share/doc/mawk/ACKNOWLEDGMENT
 beda9507694b46ec3e775ec048fca0ff  usr/share/doc/mawk/README
-4d63b395cbfb8aa9f828190beaa69dbc  usr/share/doc/mawk/changelog.Debian.gz
+5e9a16b1c2e9142702253cd2e3180805  usr/share/doc/mawk/changelog.Debian.gz
 5670c6b513cd839530aae56d95b66ab8  usr/share/doc/mawk/copyright
 fc119ca517f2c5469eac3bd700ec9f48  usr/share/doc/mawk/examples/ct_length.awk
 60f32158c4e91149fbea1555cfa84d90  usr/share/doc/mawk/examples/decl.awk

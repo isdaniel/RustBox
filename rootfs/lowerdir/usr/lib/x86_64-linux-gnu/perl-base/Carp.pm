@@ -209,7 +209,7 @@ BEGIN {
     }
 }
 
-our $VERSION = '1.52';
+our $VERSION = '1.50';
 $VERSION =~ tr/_//d;
 
 our $MaxEvalLen = 0;
@@ -282,7 +282,7 @@ sub shortmess {
     my $cgc = _cgc();
 
     # Icky backwards compatibility wrapper. :-(
-    local @CARP_NOT = scalar( $cgc ? $cgc->() : caller() );
+    local @CARP_NOT = $cgc ? $cgc->() : caller();
     shortmess_heavy(@_);
 }
 

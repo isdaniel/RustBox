@@ -1,12 +1,3 @@
-Name: adduser/homedir-permission
-Template: adduser/homedir-permission
-Value: false
-Owners: adduser
-
-Name: adduser/title
-Template: adduser/title
-Owners: adduser
-
 Name: base-passwd/group-add
 Template: base-passwd/group-add
 Owners: base-passwd
@@ -111,16 +102,8 @@ Name: glibc/upgrade
 Template: glibc/upgrade
 Owners: libc6, libc6:amd64
 
-Name: libpam-modules/deprecate-tally
-Template: libpam-modules/deprecate-tally
-Owners: libpam-modules
-
 Name: libpam-modules/disable-screensaver
 Template: libpam-modules/disable-screensaver
-Owners: libpam-modules
-
-Name: libpam-modules/profiles-disabled
-Template: libpam-modules/profiles-disabled
 Owners: libpam-modules
 
 Name: libpam-runtime/conflicts
@@ -138,11 +121,11 @@ Owners: libpam-runtime
 
 Name: libpam-runtime/profiles
 Template: libpam-runtime/profiles
-Value: unix, capability
+Value: unix
 Owners: libpam-runtime
 Variables:
- profile_names = unix, mkhomedir, capability
- profiles = Unix authentication, Create home directory on login, Inheritable Capabilities Management
+ profile_names = unix, mkhomedir
+ profiles = Unix authentication, Create home directory on login
 
 Name: libpam-runtime/title
 Template: libpam-runtime/title
@@ -162,13 +145,5 @@ Owners: libpam0g:amd64
 
 Name: libraries/restart-without-asking
 Template: libraries/restart-without-asking
-Owners: libc6, libc6:amd64, libpam0g:amd64, libssl3:amd64
-
-Name: libssl3/restart-failed
-Template: libssl3/restart-failed
-Owners: libssl3:amd64
-
-Name: libssl3/restart-services
-Template: libssl3/restart-services
-Owners: libssl3:amd64
+Owners: libc6, libc6:amd64, libpam0g:amd64
 

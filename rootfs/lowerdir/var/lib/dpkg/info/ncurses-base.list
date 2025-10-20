@@ -64,7 +64,6 @@
 /usr/share
 /usr/share/doc
 /usr/share/doc/ncurses-base
-/usr/share/doc/ncurses-base/TODO.Debian
 /usr/share/doc/ncurses-base/changelog.Debian.gz
 /usr/share/doc/ncurses-base/copyright
 /usr/share/lintian

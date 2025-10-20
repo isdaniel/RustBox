@@ -39,8 +39,7 @@ sub init {
 
 	if (Debconf::Path::find("whiptail") && 
 	    (! defined $ENV{DEBCONF_FORCE_DIALOG} || ! Debconf::Path::find("dialog")) &&
-	    (! defined $ENV{DEBCONF_FORCE_XDIALOG} || ! Debconf::Path::find("Xdialog")) &&
-	    system('whiptail --version >/dev/null 2>&1') == 0) {
+	    (! defined $ENV{DEBCONF_FORCE_XDIALOG} || ! Debconf::Path::find("Xdialog"))) {
 		$this->program('whiptail');
 		$this->dashsep('--');
 		$this->borderwidth(5);
@@ -52,8 +51,7 @@ sub init {
 		$this->hasoutputfd(1);
 	}
 	elsif (Debconf::Path::find("dialog") &&
-	       (! defined $ENV{DEBCONF_FORCE_XDIALOG} || ! Debconf::Path::find("Xdialog")) &&
-	       system('dialog --version >/dev/null 2>&1') == 0) {
+	       (! defined $ENV{DEBCONF_FORCE_XDIALOG} || ! Debconf::Path::find("Xdialog"))) {
 		$this->program('dialog');
 		$this->dashsep(''); # dialog does not need (or support) 
 		$this->borderwidth(7);

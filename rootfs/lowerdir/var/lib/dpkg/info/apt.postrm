@@ -10,22 +10,21 @@
 
 set -e
 
-# Automatically added by dh_installdeb/13.6ubuntu1
+# Automatically added by dh_installdeb/12.10ubuntu1
 dpkg-maintscript-helper rm_conffile /etc/apt/apt.conf.d/20changelog 1.2.4\~ -- "$@"
 dpkg-maintscript-helper rm_conffile /etc/cron.daily/apt 1.2.10\~ -- "$@"
-dpkg-maintscript-helper rm_conffile /etc/kernel/postinst.d/apt-auto-removal 2.4.5\~ -- "$@"
 # End automatically added section
-# Automatically added by dh_installsystemd/13.6ubuntu1
-if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+# Automatically added by dh_installsystemd/12.10ubuntu1
+if [ -d /run/systemd/system ]; then
 	systemctl --system daemon-reload >/dev/null || true
 fi
 # End automatically added section
-# Automatically added by dh_installsystemd/13.6ubuntu1
-if [ "$1" = remove ] && [ -d /run/systemd/system ] ; then
+# Automatically added by dh_installsystemd/12.10ubuntu1
+if [ -d /run/systemd/system ]; then
 	systemctl --system daemon-reload >/dev/null || true
 fi
 # End automatically added section
-# Automatically added by dh_installsystemd/13.6ubuntu1
+# Automatically added by dh_installsystemd/12.10ubuntu1
 if [ "$1" = "remove" ]; then
 	if [ -x "/usr/bin/deb-systemd-helper" ]; then
 		deb-systemd-helper mask 'apt-daily-upgrade.timer' 'apt-daily.timer' >/dev/null || true

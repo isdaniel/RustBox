@@ -10,7 +10,7 @@ use base 1.01; # ensure that they don't have a broken perl installation
 
 
 use fields qw(name readonly required backup failed
-              accept_type reject_type accept_name reject_name root);
+              accept_type reject_type accept_name reject_name);
 
 our %drivers;
 

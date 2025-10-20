@@ -5,7 +5,6 @@
 /etc/apt/apt.conf.d/01-vendor-ubuntu
 /etc/apt/apt.conf.d/01autoremove
 /etc/apt/auth.conf.d
-/etc/apt/keyrings
 /etc/apt/preferences.d
 /etc/apt/sources.list.d
 /etc/apt/trusted.gpg.d
@@ -13,6 +12,7 @@
 /etc/cron.daily/apt-compat
 /etc/kernel
 /etc/kernel/postinst.d
+/etc/kernel/postinst.d/apt-auto-removal
 /etc/logrotate.d
 /etc/logrotate.d/apt
 /lib
@@ -223,6 +223,7 @@
 /usr/share/man/de/man8/apt-cdrom.8.gz
 /usr/share/man/de/man8/apt-config.8.gz
 /usr/share/man/de/man8/apt-get.8.gz
+/usr/share/man/de/man8/apt-key.8.gz
 /usr/share/man/de/man8/apt-mark.8.gz
 /usr/share/man/de/man8/apt-secure.8.gz
 /usr/share/man/de/man8/apt.8.gz
@@ -248,6 +249,7 @@
 /usr/share/man/fr/man8/apt-cdrom.8.gz
 /usr/share/man/fr/man8/apt-config.8.gz
 /usr/share/man/fr/man8/apt-get.8.gz
+/usr/share/man/fr/man8/apt-key.8.gz
 /usr/share/man/fr/man8/apt-mark.8.gz
 /usr/share/man/fr/man8/apt-secure.8.gz
 /usr/share/man/fr/man8/apt.8.gz
@@ -255,11 +257,13 @@
 /usr/share/man/it/man5
 /usr/share/man/it/man5/apt.conf.5.gz
 /usr/share/man/it/man5/apt_preferences.5.gz
+/usr/share/man/it/man5/sources.list.5.gz
 /usr/share/man/it/man8
 /usr/share/man/it/man8/apt-cache.8.gz
 /usr/share/man/it/man8/apt-cdrom.8.gz
 /usr/share/man/it/man8/apt-config.8.gz
 /usr/share/man/it/man8/apt-get.8.gz
+/usr/share/man/it/man8/apt-key.8.gz
 /usr/share/man/it/man8/apt-mark.8.gz
 /usr/share/man/it/man8/apt-secure.8.gz
 /usr/share/man/it/man8/apt.8.gz
@@ -267,11 +271,13 @@
 /usr/share/man/ja/man5
 /usr/share/man/ja/man5/apt.conf.5.gz
 /usr/share/man/ja/man5/apt_preferences.5.gz
+/usr/share/man/ja/man5/sources.list.5.gz
 /usr/share/man/ja/man8
 /usr/share/man/ja/man8/apt-cache.8.gz
 /usr/share/man/ja/man8/apt-cdrom.8.gz
 /usr/share/man/ja/man8/apt-config.8.gz
 /usr/share/man/ja/man8/apt-get.8.gz
+/usr/share/man/ja/man8/apt-key.8.gz
 /usr/share/man/ja/man8/apt-mark.8.gz
 /usr/share/man/ja/man8/apt-secure.8.gz
 /usr/share/man/ja/man8/apt.8.gz
@@ -305,8 +311,6 @@
 /usr/share/man/nl/man5/apt_auth.conf.5.gz
 /usr/share/man/nl/man5/apt_preferences.5.gz
 /usr/share/man/nl/man5/sources.list.5.gz
-/usr/share/man/nl/man7
-/usr/share/man/nl/man7/apt-patterns.7.gz
 /usr/share/man/nl/man8
 /usr/share/man/nl/man8/apt-cache.8.gz
 /usr/share/man/nl/man8/apt-cdrom.8.gz
@@ -333,8 +337,6 @@
 /usr/share/man/pt/man5/apt_auth.conf.5.gz
 /usr/share/man/pt/man5/apt_preferences.5.gz
 /usr/share/man/pt/man5/sources.list.5.gz
-/usr/share/man/pt/man7
-/usr/share/man/pt/man7/apt-patterns.7.gz
 /usr/share/man/pt/man8
 /usr/share/man/pt/man8/apt-cache.8.gz
 /usr/share/man/pt/man8/apt-cdrom.8.gz

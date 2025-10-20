@@ -5,37 +5,32 @@
 
 package feature;
 
-our $VERSION = '1.64';
+our $VERSION = '1.54';
 
 our %feature = (
-    fc                   => 'feature_fc',
-    isa                  => 'feature_isa',
-    say                  => 'feature_say',
-    try                  => 'feature_try',
-    state                => 'feature_state',
-    switch               => 'feature_switch',
-    bitwise              => 'feature_bitwise',
-    indirect             => 'feature_indirect',
-    evalbytes            => 'feature_evalbytes',
-    signatures           => 'feature_signatures',
-    current_sub          => 'feature___SUB__',
-    refaliasing          => 'feature_refaliasing',
-    postderef_qq         => 'feature_postderef_qq',
-    unicode_eval         => 'feature_unieval',
-    declared_refs        => 'feature_myref',
-    unicode_strings      => 'feature_unicode',
-    multidimensional     => 'feature_multidimensional',
-    bareword_filehandles => 'feature_bareword_filehandles',
+    fc              => 'feature_fc',
+    say             => 'feature_say',
+    state           => 'feature_state',
+    switch          => 'feature_switch',
+    bitwise         => 'feature_bitwise',
+    evalbytes       => 'feature_evalbytes',
+    signatures      => 'feature_signatures',
+    current_sub     => 'feature___SUB__',
+    refaliasing     => 'feature_refaliasing',
+    postderef_qq    => 'feature_postderef_qq',
+    unicode_eval    => 'feature_unieval',
+    declared_refs   => 'feature_myref',
+    unicode_strings => 'feature_unicode',
 );
 
 our %feature_bundle = (
-    "5.10"    => [qw(bareword_filehandles indirect multidimensional say state switch)],
-    "5.11"    => [qw(bareword_filehandles indirect multidimensional say state switch unicode_strings)],
-    "5.15"    => [qw(bareword_filehandles current_sub evalbytes fc indirect multidimensional say state switch unicode_eval unicode_strings)],
-    "5.23"    => [qw(bareword_filehandles current_sub evalbytes fc indirect multidimensional postderef_qq say state switch unicode_eval unicode_strings)],
-    "5.27"    => [qw(bareword_filehandles bitwise current_sub evalbytes fc indirect multidimensional postderef_qq say state switch unicode_eval unicode_strings)],
-    "all"     => [qw(bareword_filehandles bitwise current_sub declared_refs evalbytes fc indirect isa multidimensional postderef_qq refaliasing say signatures state switch try unicode_eval unicode_strings)],
-    "default" => [qw(bareword_filehandles indirect multidimensional)],
+    "5.10"    => [qw(say state switch)],
+    "5.11"    => [qw(say state switch unicode_strings)],
+    "5.15"    => [qw(current_sub evalbytes fc say state switch unicode_eval unicode_strings)],
+    "5.23"    => [qw(current_sub evalbytes fc postderef_qq say state switch unicode_eval unicode_strings)],
+    "5.27"    => [qw(bitwise current_sub evalbytes fc postderef_qq say state switch unicode_eval unicode_strings)],
+    "all"     => [qw(bitwise current_sub declared_refs evalbytes fc postderef_qq refaliasing say signatures state switch unicode_eval unicode_strings)],
+    "default" => [qw()],
 );
 
 $feature_bundle{"5.12"} = $feature_bundle{"5.11"};
@@ -54,10 +49,6 @@ $feature_bundle{"5.26"} = $feature_bundle{"5.23"};
 $feature_bundle{"5.28"} = $feature_bundle{"5.27"};
 $feature_bundle{"5.29"} = $feature_bundle{"5.27"};
 $feature_bundle{"5.30"} = $feature_bundle{"5.27"};
-$feature_bundle{"5.31"} = $feature_bundle{"5.27"};
-$feature_bundle{"5.32"} = $feature_bundle{"5.27"};
-$feature_bundle{"5.33"} = $feature_bundle{"5.27"};
-$feature_bundle{"5.34"} = $feature_bundle{"5.27"};
 $feature_bundle{"5.9.5"} = $feature_bundle{"5.10"};
 my %noops = (
     postderef => 1,
@@ -68,7 +59,7 @@ my %removed = (
 );
 
 our $hint_shift   = 26;
-our $hint_mask    = 0x3c000000;
+our $hint_mask    = 0x1c000000;
 our @hint_bundles = qw( default 5.10 5.11 5.15 5.23 5.27 );
 
 # This gets set (for now) in $^H as well as in %^H,
@@ -105,7 +96,7 @@ sub __common {
     my $import = shift;
     my $bundle_number = $^H & $hint_mask;
     my $features = $bundle_number != $hint_mask
-      && $feature_bundle{$hint_bundles[$bundle_number >> $hint_shift]};
+	&& $feature_bundle{$hint_bundles[$bundle_number >> $hint_shift]};
     if ($features) {
 	# Features are enabled implicitly via bundle hints.
 	# Delete any keys that may be left over from last time.

@@ -105,8 +105,7 @@ foreach my $pkg (@packages) {
 	}
 
 	foreach my $info (['prerm',    'upgrade',     $version],
-			  ['preinst',  'upgrade',     $version],
-			  ['config',   'reconfigure', $version],
+		          ['config',   'reconfigure', $version],
 			  ['postinst', 'configure',   $version]) {
 		my $script=shift @$info;
 		my $path_script=$control_path->($script);

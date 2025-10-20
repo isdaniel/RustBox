@@ -3,8 +3,8 @@ set -e
 
 # $1: dfile, $2: link target, $3: distrib
 replace_with_link() {
-	dfile="$DPKG_ROOT$1"; ltarget=$2; distrib="$DPKG_ROOT$3"
-	temp="$dfile.tmp"
+	dfile=$1; ltarget=$2; distrib=$3
+	temp=$dfile.tmp
 	# Safely create a symlink to $ltarget at $dfile, first
 	# making a backup of $dfile (the file being diverted)
 	# in $distrib (if specified).
@@ -47,8 +47,8 @@ claim_binsh() {
 	dpkg-divert --package bash --no-rename --remove $dfile
 	dpkg-divert --package dash --no-rename --divert $distrib --add $dfile
 	# remove the old equivalent of $distrib, if it existed.
-	if [ -n "$DPKG_ROOT$truename" ]; then
-	       rm -f "$DPKG_ROOT$truename"
+	if [ -n "$truename" ]; then
+	       rm -f "$truename"
 	fi
 	replace_with_link $dfile $ltarget $distrib
 }
@@ -132,10 +132,8 @@ if [ $debconf ]; then
 	db_get dash/sh
 	if [ "$RET" = true ]; then
 		claim_binsh /bin/sh dash
-		if [ -d "$DPKG_ROOT/usr/share/man/man1/" ]; then
-			claim_binsh /usr/share/man/man1/sh.1.gz dash.1.gz \
-				/usr/share/man/man1/sh.distrib.1.gz
-		fi
+		claim_binsh /usr/share/man/man1/sh.1.gz dash.1.gz \
+			/usr/share/man/man1/sh.distrib.1.gz
 	else
 		unclaim_binsh /bin/sh dash
 		unclaim_binsh /usr/share/man/man1/sh.1.gz dash.1.gz \
@@ -143,8 +141,8 @@ if [ $debconf ]; then
 	fi
 fi
 
-# Automatically added by dh_installmenu/13.6ubuntu1
-if [ "$1" = "configure" ] && [ -x "`command -v update-menus`" ]; then
+# Automatically added by dh_installmenu/12.1.1ubuntu1
+if [ "$1" = "configure" ] && [ -x "`which update-menus 2>/dev/null`" ]; then
 	update-menus
 fi
 # End automatically added section

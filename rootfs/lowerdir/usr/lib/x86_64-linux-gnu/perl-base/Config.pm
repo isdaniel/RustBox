@@ -3,14 +3,14 @@
 
 # for a description of the variables, please have a look at the
 # Glossary file, as written in the Porting folder, or use the url:
-# https://github.com/Perl/perl5/blob/blead/Porting/Glossary
+# http://perl5.git.perl.org/perl.git/blob/HEAD:/Porting/Glossary
 
 package Config;
 use strict;
 use warnings;
 our ( %Config, $VERSION );
 
-$VERSION = "5.034000";
+$VERSION = "5.030000";
 
 # Skip @Config::EXPORT because it only contains %Config, which we special
 # case below as it's not a function. @Config::EXPORT won't change in the
@@ -56,11 +56,11 @@ sub import {
     return;
 }
 
-die "$0: Perl lib version (5.34.0) doesn't match executable '$^X' version ($])"
+die "$0: Perl lib version (5.30.0) doesn't match executable '$^X' version ($])"
     unless $^V;
 
-$^V eq 5.34.0
-    or die sprintf "%s: Perl lib version (5.34.0) doesn't match executable '$^X' version (%vd)", $0, $^V;
+$^V eq 5.30.0
+    or die sprintf "%s: Perl lib version (5.30.0) doesn't match executable '$^X' version (%vd)", $0, $^V;
 
 sub FETCH {
     my($self, $key) = @_;
@@ -83,7 +83,7 @@ sub AUTOLOAD {
 
 # tie returns the object, so the value returned to require will be true.
 tie %Config, 'Config', {
-    archlibexp => '/usr/lib/x86_64-linux-gnu/perl/5.34',
+    archlibexp => '/usr/lib/x86_64-linux-gnu/perl/5.30',
     archname => 'x86_64-linux-gnu-thread-multi',
     cc => 'x86_64-linux-gnu-gcc',
     d_readlink => 'define',
@@ -95,16 +95,16 @@ tie %Config, 'Config', {
     inc_version_list => '',
     intsize => '4',
     ldlibpthname => 'LD_LIBRARY_PATH',
-    libpth => '/usr/local/lib /usr/lib/x86_64-linux-gnu /usr/lib /lib/x86_64-linux-gnu /lib',
+    libpth => '/usr/local/lib /usr/lib/gcc/x86_64-linux-gnu/9/include-fixed /usr/include/x86_64-linux-gnu /usr/lib /lib/x86_64-linux-gnu /lib/../lib /usr/lib/x86_64-linux-gnu /usr/lib/../lib /lib',
     osname => 'linux',
     osvers => '4.19.0',
     path_sep => ':',
-    privlibexp => '/usr/share/perl/5.34',
+    privlibexp => '/usr/share/perl/5.30',
     scriptdir => '/usr/bin',
-    sitearchexp => '/usr/local/lib/x86_64-linux-gnu/perl/5.34.0',
-    sitelibexp => '/usr/local/share/perl/5.34.0',
+    sitearchexp => '/usr/local/lib/x86_64-linux-gnu/perl/5.30.0',
+    sitelibexp => '/usr/local/share/perl/5.30.0',
     so => 'so',
     useithreads => 'define',
     usevendorprefix => 'define',
-    version => '5.34.0',
+    version => '5.30.0',
 };

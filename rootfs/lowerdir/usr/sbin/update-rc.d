@@ -136,7 +136,7 @@ sub make_systemd_links {
     }
 
     # If systemctl is available, let's use that to create the symlinks.
-    if (-x "/bin/systemctl" || -x "/usr/bin/systemctl") {
+    if (-x "/bin/systemctl") {
         # Set this env var to avoid loop in systemd-sysv-install.
         local $ENV{SYSTEMCTL_SKIP_SYSV} = 1;
         # Use --quiet to mimic the old update-rc.d behaviour.
@@ -153,8 +153,6 @@ sub make_systemd_links {
         $service_path = "/etc/systemd/system/$scriptname.service";
     } elsif (-f "/lib/systemd/system/$scriptname.service") {
         $service_path = "/lib/systemd/system/$scriptname.service";
-    } elsif (-f "/usr/lib/systemd/system/$scriptname.service") {
-        $service_path = "/usr/lib/systemd/system/$scriptname.service";
     }
     if (defined($service_path)) {
         my $changed_sth;

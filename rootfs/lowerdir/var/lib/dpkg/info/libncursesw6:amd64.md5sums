@@ -1,4 +1,4 @@
-00fbeed3b2bc2cc48ffafff26c91b760  lib/x86_64-linux-gnu/libncursesw.so.6.3
-d030ac4d7883ec5fc04e2946a8408762  usr/lib/x86_64-linux-gnu/libformw.so.6.3
-a2d4370e0aa782207fcead99db05b358  usr/lib/x86_64-linux-gnu/libmenuw.so.6.3
-c0c06efb39c9d17235f8708aeb76cd5b  usr/lib/x86_64-linux-gnu/libpanelw.so.6.3
+0f0671b38f1ccda3400b4759b753ff17  lib/x86_64-linux-gnu/libncursesw.so.6.2
+1e8ec33ead29f53c8632b439e2623b04  usr/lib/x86_64-linux-gnu/libformw.so.6.2
+703db87bac6d431baf7cda3e136fa0f9  usr/lib/x86_64-linux-gnu/libmenuw.so.6.2
+73bbe2b051ff5dab739c0d828585494a  usr/lib/x86_64-linux-gnu/libpanelw.so.6.2

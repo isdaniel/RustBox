@@ -1,7 +1,7 @@
 /.
 /lib
 /lib/x86_64-linux-gnu
-/lib/x86_64-linux-gnu/liblzma.so.5.2.5
+/lib/x86_64-linux-gnu/liblzma.so.5.2.4
 /usr
 /usr/share
 /usr/share/doc

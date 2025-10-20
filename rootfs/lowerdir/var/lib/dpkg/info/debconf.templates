@@ -153,9 +153,9 @@ Description-fa.UTF-8: رابط کاربری مورد استفاده:
  .
  رابط dialog یک رابط کاربری تمام صفحه بر مبنای کاراکتر است، در حالی که readline بیشتر از رابط کاربری متنی استفاده می کند، و gnome و kde رابط های ،رابط کاربری X هستند که میزکارهای مناسبی را در اختیار می گذارند (اما ممکن است هر کدام از محیط های تحت X استفاده شود). ویرایشکر رابط به شما اجازه می دهد تا چیز ها را با ویرایشگر متن مورد علاقه خود ویرایش کنید. رابط های غیر محاوره ای هیچگاه از شما سؤالی نمی پرسند.
 Description-fi.UTF-8: Käytettävä liittymä:
- Debconf yhdenmukaistaa sitä käyttävien pakettien asetuskäyttöliittymän. Voit itse valita mieluisesi liittymän muutamasta vaihtoehdosta.
+ Debconf yhdenmukaistaa sitÃ€ kÃ€yttÃ€vien pakettien asetuskÃ€yttÃ¶liittymÃ€n. Voit itse valita mieluisesi liittymÃ€n muutamasta vaihtoehdosta.
  .
- Valintaikkuna on ruudun täyttävä merkkipohjainen liittymä, kun taas readline on perinteisempi pelkkää tekstiä käyttävä liittymä. Sekä Gnome että KDE ovat nykyaikaisia X-pohjaisia liittymiä. Teksturi käyttää asetusten säätöön lempiteksturiasi. Ei-vuorovaikutteinen liittymä ei koskaan kysy kysymyksiä.
+ Valintaikkuna on ruudun tÃ€yttÃ€vÃ€ merkkipohjainen liittymÃ€, kun taas readline on perinteisempi pelkkÃ€Ã€ tekstiÃ€ kÃ€yttÃ€vÃ€ liittymÃ€. SekÃ€ Gnome ettÃ€ KDE ovat nykyaikaisia X-pohjaisia liittymiÃ€. Teksturi kÃ€yttÃ€Ã€ asetusten sÃ€Ã€tÃ¶Ã¶n lempiteksturiasi. Ei-vuorovaikutteinen liittymÃ€ ei koskaan kysy kysymyksiÃ€.
 Description-fr.UTF-8: Interface à utiliser :
  Les paquets utilisant debconf pour leur configuration ont une interface et une ergonomie communes. Vous pouvez choisir leur interface utilisateur.
  .
@@ -600,14 +600,14 @@ Description-fa.UTF-8: از سوالات با اولویت کمتر از مقدا
  .
  توجه داشته باشید، که هیچ اهمیتی ندارد که چه گزینه ای را انتخاب می کنید، شما می توانید در صورتی که یک بسته را با دستور dpkg-reconfigure مجدداً پیکربندی کردید، تمام سؤال ها را دوباره ببینید.
 Description-fi.UTF-8: Ohita kysymykset, joiden prioriteetti on pienempi kuin:
- Debconf priorisoi esittämänsä kysymykset. Valitse alin prioriteetti, jonka kysymykset haluat nähdä:
-   - "kriittinen" kysyy vain jos järjestelmä voi hajota.
-     Valitse tämä jos olet uusi tai sinulla on kiire.
-   - "tärkeä" on kohtuullisen tärkeille kysymyksille
+ Debconf priorisoi esittÃ€mÃ€nsÃ€ kysymykset. Valitse alin prioriteetti, jonka kysymykset haluat nÃ€hdÃ€:
+   - "kriittinen" kysyy vain jos jÃ€rjestelmÃ€ voi hajota.
+     Valitse tÃ€mÃ€ jos olet uusi tai sinulla on kiire.
+   - "tÃ€rkeÃ€" on kohtuullisen tÃ€rkeille kysymyksille
    - "tavallinen" on normaaleille kysymyksille
-   - "vähäpätöinen" on säätöfriikeille, jotka haluavat nähdä kaiken
+   - "vÃ€hÃ€pÃ€tÃ¶inen" on sÃ€Ã€tÃ¶friikeille, jotka haluavat nÃ€hdÃ€ kaiken
  .
- Huomaa, että riippumatta tässä valitsemastasi tasosta näet kaikki kysymykset uudelleensäätämällä paketin "dpkg-reconfigure"-ohjelmalla.
+ Huomaa, ettÃ€ riippumatta tÃ€ssÃ€ valitsemastasi tasosta nÃ€et kaikki kysymykset uudelleensÃ€Ã€tÃ€mÃ€llÃ€ paketin "dpkg-reconfigure"-ohjelmalla.
 Description-fr.UTF-8: Ignorer les questions de priorité inférieure à :
  Debconf gère les priorités des questions qu'il vous pose. Choisissez la priorité la plus basse des questions que vous souhaitez voir :
    - « critique » n'affiche que les questions pouvant casser le système.

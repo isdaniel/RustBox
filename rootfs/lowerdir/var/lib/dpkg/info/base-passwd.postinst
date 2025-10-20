@@ -55,12 +55,12 @@ if [ ! "$1" = "configure" ] ; then
     exit 0
 fi
 
-if [ ! -e "$DPKG_ROOT/etc/passwd" ] ; then
-	cp "$DPKG_ROOT/usr/share/base-passwd/passwd.master" "$DPKG_ROOT/etc/passwd"
+if [ ! -e /etc/passwd ] ; then
+	cp /usr/share/base-passwd/passwd.master /etc/passwd
 fi
 
-if [ ! -e "$DPKG_ROOT/etc/group" ] ; then
-	cp "$DPKG_ROOT/usr/share/base-passwd/group.master" "$DPKG_ROOT/etc/group"
+if [ ! -e /etc/group ] ; then
+	cp /usr/share/base-passwd/group.master /etc/group
 fi
 
 if [ "$2" = "3.2.2" ] && [ -f /etc/passwd.org ] ; then
@@ -81,8 +81,8 @@ EOF
 	fi
 fi
 
-tmp=`mktemp`
-if [ -n "$2" ] && ! update-passwd --dry-run > $tmp ; then
+tmp=`tempfile`
+if ! update-passwd --dry-run > $tmp ; then
 	if [ -f /usr/share/debconf/confmodule ] ; then
 		db_version 2.0
 		update-passwd --verbose

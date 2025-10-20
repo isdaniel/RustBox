@@ -1,4 +1,5 @@
 /etc/debian_version
+/etc/default/motd-news
 /etc/dpkg/origins/debian
 /etc/dpkg/origins/ubuntu
 /etc/host.conf

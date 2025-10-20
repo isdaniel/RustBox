@@ -15,7 +15,7 @@ then
 		db_get adduser/homedir-permission || RET="true"
 		if [ "$RET" = "false" ]
 		then
-			NEW_PERMISSION="0750"
+			NEW_PERMISSION="0751"
 		else
 			NEW_PERMISSION="0755"
 		fi

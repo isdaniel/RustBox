@@ -76,7 +76,6 @@ sub load {
 	
 	if (! $cf) {
 		for my $file (@config_files) {
-			$file = "$ENV{DPKG_ROOT}$file" if exists $ENV{DPKG_ROOT};
 			$cf=$file, last if -e $file;
 		}
 	}
@@ -104,9 +103,6 @@ sub load {
 		my %config=(@defaults);
 		if (exists $ENV{DEBCONF_DB_REPLACE}) {
 			$config{readonly} = "true";
-		}
-		if (exists $ENV{DPKG_ROOT}) {
-			$config{root} = $ENV{DPKG_ROOT};
 		}
 		next unless _hashify($_, \%config);
 		eval {

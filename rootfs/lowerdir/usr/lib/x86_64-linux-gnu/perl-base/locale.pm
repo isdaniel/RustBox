@@ -1,9 +1,6 @@
 package locale;
 
-use strict;
-use warnings;
-
-our $VERSION = '1.10';
+our $VERSION = '1.09';
 use Config;
 
 $Carp::Internal{ (__PACKAGE__) } = 1;
@@ -32,7 +29,7 @@ sub import {
                               :numeric :monetary :time) );
         for (my $i = 0; $i < @_; $i++) {
             my $arg = $_[$i];
-            my $complement = $arg =~ s/ : ( ! | not_ ) /:/x;
+            $complement = $arg =~ s/ : ( ! | not_ ) /:/x;
             if (! grep { $arg eq $_ } @categories, ":characters") {
                 require Carp;
                 Carp::croak("Unknown parameter '$_[$i]' to 'use locale'");

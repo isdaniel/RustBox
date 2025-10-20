@@ -89,9 +89,22 @@ if [ "$1" = "configure" ] && [ "$2" = "" ]; then
   chown root:utmp /var/log/wtmp /var/log/btmp /var/log/lastlog
   chmod 664 /var/log/wtmp /var/log/lastlog
   chmod 660 /var/log/btmp
+  if [ ! -f /var/run/utmp ]; then
+    echo -n>/var/run/utmp
+  fi
+  chown root:utmp /var/run/utmp
+  chmod 664 /var/run/utmp
 fi
 
-if [ -d /usr/share/info ] && [ ! -f /usr/info/dir ] && [ ! -f /usr/share/info/dir ]; then
+if [ ! -d /var/lib/dpkg ]; then
+  mkdir -m 755 -p /var/lib/dpkg
+fi
+if [ ! -f /var/lib/dpkg/status ]; then
+  echo > /var/lib/dpkg/status
+  chmod 644 /var/lib/dpkg/status
+fi
+
+if [ ! -f /usr/info/dir ] && [ ! -f /usr/share/info/dir ]; then
   install_from_default info.dir /usr/share/info/dir
   chmod 644 /usr/share/info/dir
 fi
@@ -112,27 +125,7 @@ if [ "$1" = "configure" ] && [ "$2" != "" ]; then
   fi
 fi
 
-# special case of having /etc/default/motd-news removed by hand
-# signal the motd-news-config package that this happened, so that
-# it does not put back the file with default contents which would
-# re-enable motd-news
-motd_news_config="/etc/default/motd-news"
-# only in upgrades, never fresh installs like in debootstrap
-if [ "$2" != "" ] && \
-   [ ! -e ${motd_news_config} ] && \
-   [ ! -e ${motd_news_config}.dpkg-remove ] && \
-   [ ! -e ${motd_news_config}.dpkg-backup ]; then
-      # The .wasremoved file only matters if ubuntu-server is installed,
-      # because that's what will pull in motd-news-config
-      if dpkg -l ubuntu-server 2>/dev/null | grep -q ^i; then
-        touch ${motd_news_config}.wasremoved
-      fi
-fi
-
-# Automatically added by dh_installdeb/13.6ubuntu1
-dpkg-maintscript-helper rm_conffile /etc/default/motd-news 11ubuntu11\~ base-files -- "$@"
-# End automatically added section
-# Automatically added by dh_installsystemd/13.6ubuntu1
+# Automatically added by dh_systemd_enable/12.10ubuntu1
 if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
 	# This will only remove masks created by d-s-h on package removal.
 	deb-systemd-helper unmask 'motd-news.timer' >/dev/null || true
@@ -149,29 +142,19 @@ if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-decon
 	fi
 fi
 # End automatically added section
-# Automatically added by dh_installsystemd/13.6ubuntu1
+# Automatically added by dh_systemd_start/12.10ubuntu1
 if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
 	if [ -d /run/systemd/system ]; then
 		systemctl --system daemon-reload >/dev/null || true
-		if [ -n "$2" ]; then
-			_dh_action=restart
-		else
-			_dh_action=start
-		fi
-		deb-systemd-invoke $_dh_action 'motd-news.timer' >/dev/null || true
+		deb-systemd-invoke start 'motd-news.timer' >/dev/null || true
 	fi
 fi
 # End automatically added section
-# Automatically added by dh_installsystemd/13.6ubuntu1
+# Automatically added by dh_systemd_start/12.10ubuntu1
 if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
 	if [ -d /run/systemd/system ]; then
 		systemctl --system daemon-reload >/dev/null || true
-		if [ -n "$2" ]; then
-			_dh_action=restart
-		else
-			_dh_action=start
-		fi
-		deb-systemd-invoke $_dh_action 'motd-news.service' >/dev/null || true
+		deb-systemd-invoke start 'motd-news.service' >/dev/null || true
 	fi
 fi
 # End automatically added section

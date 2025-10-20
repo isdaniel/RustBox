@@ -29,7 +29,7 @@ then
 	done
 fi
 
-pam-auth-update --root "$DPKG_ROOT" --package $force
+pam-auth-update --package $force
 
 if [ -n "$force" ]; then
 	rm -f /etc/pam.d/common-auth.pam-old \

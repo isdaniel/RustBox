@@ -107,10 +107,7 @@ GetOptions(
 	"unseen|u" => \$unseen,
 ) || usage();
 
-{
-	local $ENV{DEBCONF_NOWARNINGS} = 'yes' if $checkonly;
-	Debconf::Db->load;
-}
+Debconf::Db->load;
 
 $error = 0;
 

@@ -33,9 +33,6 @@ sub init {
 	}
 
 	$this->error("No directory specified") unless $this->{directory};
-	if (exists $this->{root}) {
-		$this->{directory} = $this->{root} . $this->{directory};
-	}
 	if (not -d $this->{directory} and not $this->{readonly}) {
 		mkdir $this->{directory} ||
 			$this->error("mkdir $this->{directory}:$!");

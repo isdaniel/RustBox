@@ -47,31 +47,25 @@ my %md5sums = (
 	'auth' => ['8d4fe17e66ba25de16a117035d1396aa'],
 	'account' => ['3c0c362eaf3421848b679d63fd48c3fa'],
 	'password' => [
-	        '4d5c92d595a46b69cd61f18feb4c0574',
 		'50fce2113dfda83ac8bdd5a6e706caec',
 		'4bd7610f2e85f8ddaef79c7db7cb49eb',
 		'9ba753d0824276b44bcadfee1f87b6bc',
 	],
 	'session' => [
-        	'f297c731a467822cbd86e1283263e8a3',
 		'240fb92986c885b327cdb21dd641da8c',
 		'4a25673e8b36f1805219027d3be02cd2',
-		'd38511a6ce8324742c151eed9fb57ba1',
+		'73144a2f4e609a922a51e301cd66a57e',
 	],
 	'session-noninteractive' => [
 		'ad2b78ce1498dd637ef36469430b6ac6',
 		'a20e8df3469bfe25c13a3b39161b30f0',
 	],
 );
-my @invalid_modules = ('pam_tally');
 
 opendir(DIR, $inputdir) || die "could not open config directory: $!";
 while (my $profile = readdir(DIR)) {
 	next if ($profile eq '.' || $profile eq '..' || $profile =~ m/~$/ || $profile =~ m/^#.+#$/);
 	%{$profiles{$profile}} = parse_pam_profile($inputdir . '/' . $profile);
-        if (defined $profiles{$profile}{'disabled'} and $profiles{$profile}{'disabled'}) {
-          delete $profiles{$profile};
-        }
 }
 closedir DIR;
 
@@ -90,11 +84,6 @@ while ($#ARGV >= 0) {
 		$force = 1;
 	} elsif ($opt eq '--package') {
 		$package = 1;
-        } elsif ($opt eq '--root') {
-                my $rootdir = shift @ARGV;
-                $savedir = "${rootdir}$savedir";
-                $confdir = "${rootdir}$confdir";
-               $inputdir = "${rootdir}$inputdir";
 	} elsif ($opt eq '--remove') {
 		while ($#ARGV >= 0) {
 			last if ($ARGV[0] =~ /^--/);
@@ -715,9 +704,6 @@ sub parse_pam_profile
 			s/^\s+//;
 			s/\s+$//;
 			$profile{$fieldname} .= "\n$_" if ($_);
-                        if (grep { $profile{$fieldname} =~ /$_/} @invalid_modules) {
-                          $profile{'disabled'} = 1;
-                        }
 			$profile{$fieldname} =~ s/^[\n\s]+//;
 		}
 	}

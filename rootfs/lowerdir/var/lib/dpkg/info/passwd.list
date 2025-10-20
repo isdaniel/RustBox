@@ -89,7 +89,6 @@
 /usr/share/man/de/man5/passwd.5.gz
 /usr/share/man/de/man5/shadow.5.gz
 /usr/share/man/de/man8
-/usr/share/man/de/man8/chgpasswd.8.gz
 /usr/share/man/de/man8/chpasswd.8.gz
 /usr/share/man/de/man8/groupadd.8.gz
 /usr/share/man/de/man8/groupdel.8.gz
@@ -119,10 +118,7 @@
 /usr/share/man/fr/man5/gshadow.5.gz
 /usr/share/man/fr/man5/passwd.5.gz
 /usr/share/man/fr/man5/shadow.5.gz
-/usr/share/man/fr/man5/subgid.5.gz
-/usr/share/man/fr/man5/subuid.5.gz
 /usr/share/man/fr/man8
-/usr/share/man/fr/man8/chgpasswd.8.gz
 /usr/share/man/fr/man8/chpasswd.8.gz
 /usr/share/man/fr/man8/groupadd.8.gz
 /usr/share/man/fr/man8/groupdel.8.gz
@@ -161,7 +157,6 @@
 /usr/share/man/it/man5/passwd.5.gz
 /usr/share/man/it/man5/shadow.5.gz
 /usr/share/man/it/man8
-/usr/share/man/it/man8/chgpasswd.8.gz
 /usr/share/man/it/man8/chpasswd.8.gz
 /usr/share/man/it/man8/groupadd.8.gz
 /usr/share/man/it/man8/groupdel.8.gz
@@ -273,7 +268,6 @@
 /usr/share/man/ru/man5/passwd.5.gz
 /usr/share/man/ru/man5/shadow.5.gz
 /usr/share/man/ru/man8
-/usr/share/man/ru/man8/chgpasswd.8.gz
 /usr/share/man/ru/man8/chpasswd.8.gz
 /usr/share/man/ru/man8/groupadd.8.gz
 /usr/share/man/ru/man8/groupdel.8.gz
@@ -333,7 +327,6 @@
 /usr/share/man/zh_CN/man5/passwd.5.gz
 /usr/share/man/zh_CN/man5/shadow.5.gz
 /usr/share/man/zh_CN/man8
-/usr/share/man/zh_CN/man8/chgpasswd.8.gz
 /usr/share/man/zh_CN/man8/chpasswd.8.gz
 /usr/share/man/zh_CN/man8/groupadd.8.gz
 /usr/share/man/zh_CN/man8/groupdel.8.gz

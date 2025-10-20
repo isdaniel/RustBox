@@ -1,9 +1,9 @@
 package Socket;
 
 use strict;
-{ use v5.6.1; }
+{ use 5.006001; }
 
-our $VERSION = '2.031';
+our $VERSION = '2.027';
 
 # Still undocumented: SCM_*, SOMAXCONN, IOV_MAX, UIO_MAXIOV
 
@@ -150,14 +150,6 @@ BEGIN {
 *LF   = \LF();
 *CRLF = \CRLF();
 
-# The four deprecated addrinfo constants
-foreach my $name (qw( AI_IDN_ALLOW_UNASSIGNED AI_IDN_USE_STD3_ASCII_RULES NI_IDN_ALLOW_UNASSIGNED NI_IDN_USE_STD3_ASCII_RULES )) {
-    no strict 'refs';
-    *$name = sub {
-	croak "The addrinfo constant $name is deprecated";
-    };
-}
-
 sub sockaddr_in {
     if (@_ == 6 && !wantarray) { # perl5.001m compat; use this && die
 	my($af, $port, @quad) = @_;
@@ -237,9 +229,13 @@ if( defined &getaddrinfo ) {
 
 	# Constants we don't support. Export them, but croak if anyone tries to
 	# use them
-	AI_IDN      => 64,
-	AI_CANONIDN => 128,
-	NI_IDN      => 32,
+	AI_IDN                      => 64,
+	AI_CANONIDN                 => 128,
+	AI_IDN_ALLOW_UNASSIGNED     => 256,
+	AI_IDN_USE_STD3_ASCII_RULES => 512,
+	NI_IDN                      => 32,
+	NI_IDN_ALLOW_UNASSIGNED     => 64,
+	NI_IDN_USE_STD3_ASCII_RULES => 128,
 
 	# Error constants we'll never return, so it doesn't matter what value
 	# these have, nor that we don't provide strings for them
@@ -309,7 +305,7 @@ sub fake_getaddrinfo
     # to talk AF_INET. If not we'd have to return no addresses at all. :)
     $flags &= ~(AI_V4MAPPED()|AI_ALL()|AI_ADDRCONFIG());
 
-    $flags & (AI_IDN()|AI_CANONIDN()) and
+    $flags & (AI_IDN()|AI_CANONIDN()|AI_IDN_ALLOW_UNASSIGNED()|AI_IDN_USE_STD3_ASCII_RULES()) and
 	croak "Socket::getaddrinfo() does not support IDN";
 
     $flags == 0 or return fake_makeerr( EAI_BADFLAGS() );
@@ -407,7 +403,7 @@ sub fake_getnameinfo
     my $flag_namereqd    = $flags & NI_NAMEREQD();    $flags &= ~NI_NAMEREQD();
     my $flag_dgram       = $flags & NI_DGRAM()   ;    $flags &= ~NI_DGRAM();
 
-    $flags & NI_IDN() and
+    $flags & (NI_IDN()|NI_IDN_ALLOW_UNASSIGNED()|NI_IDN_USE_STD3_ASCII_RULES()) and
 	croak "Socket::getnameinfo() does not support IDN";
 
     $flags == 0 or return fake_makeerr( EAI_BADFLAGS() );

@@ -22,7 +22,6 @@ liblz4.so.1 liblz4-1 #MINVER#
  LZ4F_getErrorName@Base 0.0~r127
  LZ4F_getFrameInfo@Base 0.0~r127
  LZ4F_getVersion@Base 1.7.5
- LZ4F_headerSize@Base 1.9.3
  LZ4F_isError@Base 0.0~r127
  LZ4F_resetDecompressionContext@Base 1.8.0
  LZ4_compress@Base 0.0~r113

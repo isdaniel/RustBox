@@ -54,7 +54,7 @@ Comment: make_private_security_descriptor() and the helper functions were
  * The above copyright notice and this permission notice shall be
  * included in all copies or substantial portions of the Software.
 
-Files: trust/digest.c common/hash.c
+Files: trust/digest.c trust/digest.c common/hash.c
 Copyright: 2004, 2005, 2007, 2011  Internet Systems Consortium, Inc. ("ISC")
            2000, 2001, 2003  Internet Software Consortium.
 License: ISC
@@ -130,26 +130,10 @@ Files: common/unix-peer.c
 Copyright: 2013 Nikos Mavrogiannopoulos
 License: BSD-3-Clause
 
-Files: common/frob-getprogname.c
-Copyright: 2020 Red Hat Inc.
-License: BSD-3-Clause
-
-Files: p11-kit/mock-module-ep8.c
-Copyright: 2012 Stefan Walter
- 2020 Red Hat, Inc.
-License: BSD-3-Clause
-
-Files: fuzz/main.c
-Copyright: 2017 Nikos Mavrogiannopoulos
-License: LGPL-2.1+
-
-Files: fuzz/rpc_fuzzer.c
-Copyright: 2016 Google Inc
-License: Apache-2.0
 
 Files: debian/*
 Copyright: 2011 Chris Coulson <chris.coulson@canonical.com>
-           2011-2021 Andreas Metzler <ametzler@debian.org>
+           2011-2013 Andreas Metzler <ametzler@debian.org>
 License: BSD-3-Clause
 
 
@@ -192,11 +176,3 @@ License: BSD-3-Clause
  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  SUCH DAMAGE.
-
-License: LGPL-2.1+
- On Debian systems a copy of the LGPL 2.1 license can be found in
- /usr/share/common-licenses/LGPL-2.1
-
-License: Apache-2.0
- On Debian systems a copy of the Apache 2.0 license can be found in
- /usr/share/common-licenses/Apache-2.0

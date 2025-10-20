@@ -18,7 +18,6 @@ shift @ARGV if $ARGV[0] eq '--';
 
 my $package;
 my $no_title=0;
-my $root=$ENV{DPKG_ROOT} // '';
 if ($ENV{DEBCONF_PACKAGE}) {
 	$package=$ENV{DEBCONF_PACKAGE};
 }
@@ -27,8 +26,8 @@ elsif ($ARGV[0]=~m!^.*/(.*?)\.(?:postinst|postrm|prerm)$!) {
 	my $action=$ARGV[1];
 	$no_title=1 if $action eq 'triggered';
 }
-elsif (-e "$root/var/lib/dpkg/tmp.ci/control") {
-	open (CONTROL, "< $root/var/lib/dpkg/tmp.ci/control")
+elsif (-e "/var/lib/dpkg/tmp.ci/control") {
+	open (CONTROL, "< /var/lib/dpkg/tmp.ci/control")
 		|| die "Debconf: unable to open control file: $!";
 	while (<CONTROL>) {
 		if (/^Package: (.*)/) {

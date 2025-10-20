@@ -1,7 +1,7 @@
-package File::Temp; # git description: v0.2310-3-gc7148fe
+package File::Temp; # git description: v0.2308-7-g3bb4d88
 # ABSTRACT: return name and handle of a temporary file safely
 
-our $VERSION = '0.2311';
+our $VERSION = '0.2309';
 
 #pod =begin :__INTERNALS
 #pod
@@ -307,7 +307,6 @@ my %FILES_CREATED_BY_OBJECT;
 #                        use of the O_TEMPORARY flag to sysopen.
 #                        Usually irrelevant on unix
 #   "use_exlock" => Indicates that O_EXLOCK should be used. Default is false.
-#   "file_permissions" => file permissions for sysopen(). Default is 0600.
 
 # Optionally a reference to a scalar can be passed into the function
 # On error this will be used to store the reason for the error
@@ -340,13 +339,12 @@ sub _gettemp {
 
   # Default options
   my %options = (
-                 "open"             => 0,
-                 "mkdir"            => 0,
-                 "suffixlen"        => 0,
-                 "unlink_on_close"  => 0,
-                 "use_exlock"       => 0,
-                 "ErrStr"           => \$tempErrStr,
-                 "file_permissions" => undef,
+                 "open" => 0,
+                 "mkdir" => 0,
+                 "suffixlen" => 0,
+                 "unlink_on_close" => 0,
+                 "use_exlock" => 0,
+                 "ErrStr" => \$tempErrStr,
                 );
 
   # Read the template
@@ -481,10 +479,6 @@ sub _gettemp {
     }
   }
 
-  my $perms = $options{file_permissions};
-  my $has_perms = defined $perms;
-  $perms = 0600 unless $has_perms;
-
   # Now try MAX_TRIES time to open the file
   for (my $i = 0; $i < MAX_TRIES; $i++) {
 
@@ -506,19 +500,19 @@ sub _gettemp {
       my $open_success = undef;
       if ( $^O eq 'VMS' and $options{"unlink_on_close"} && !$KEEP_ALL) {
         # make it auto delete on close by setting FAB$V_DLT bit
-        $fh = VMS::Stdio::vmssysopen($path, $OPENFLAGS, $perms, 'fop=dlt');
+        $fh = VMS::Stdio::vmssysopen($path, $OPENFLAGS, 0600, 'fop=dlt');
         $open_success = $fh;
       } else {
         my $flags = ( ($options{"unlink_on_close"} && !$KEEP_ALL) ?
                       $OPENTEMPFLAGS :
                       $OPENFLAGS );
         $flags |= $LOCKFLAG if (defined $LOCKFLAG && $options{use_exlock});
-        $open_success = sysopen($fh, $path, $flags, $perms);
+        $open_success = sysopen($fh, $path, $flags, 0600);
       }
       if ( $open_success ) {
 
         # in case of odd umask force rw
-        chmod($perms, $path) unless $has_perms;
+        chmod(0600, $path);
 
         # Opened successfully - return file handle and name
         return ($fh, $path);
@@ -800,7 +794,7 @@ sub _is_verysafe {
 
 sub _can_unlink_opened_file {
 
-  if (grep $^O eq $_, qw/MSWin32 os2 VMS dos MacOS haiku/) {
+  if (grep { $^O eq $_ } qw/MSWin32 os2 VMS dos MacOS haiku/) {
     return 0;
   } else {
     return 1;
@@ -998,7 +992,7 @@ sub _can_do_level {
 sub _parse_args {
   my $leading_template = (scalar(@_) % 2 == 1 ? shift(@_) : '' );
   my %args = @_;
-  %args = map +(uc($_) => $args{$_}), keys %args;
+  %args = map { uc($_), $args{$_} } keys %args;
 
   # template (store it in an array so that it will
   # disappear from the arg list of tempfile)
@@ -1047,8 +1041,7 @@ sub _parse_args {
 #pod if UNLINK is set to true (the default).
 #pod
 #pod Supported arguments are the same as for C<tempfile>: UNLINK
-#pod (defaulting to true), DIR, EXLOCK, PERMS and SUFFIX.
-#pod Additionally, the filename
+#pod (defaulting to true), DIR, EXLOCK and SUFFIX. Additionally, the filename
 #pod template is specified using the TEMPLATE option. The OPEN option
 #pod is not supported (the file is always opened).
 #pod
@@ -1359,11 +1352,6 @@ sub DESTROY {
 #pod
 #pod   ($fh, $filename) = tempfile($template, EXLOCK => 1);
 #pod
-#pod By default, the temp file is created with 0600 file permissions.
-#pod Use C<PERMS> to change this:
-#pod
-#pod   ($fh, $filename) = tempfile($template, PERMS => 0666);
-#pod
 #pod Options can be combined as required.
 #pod
 #pod Will croak() if there is an error.
@@ -1375,8 +1363,6 @@ sub DESTROY {
 #pod TMPDIR flag available since 0.19.
 #pod
 #pod EXLOCK flag available since 0.19.
-#pod
-#pod PERMS flag available since 0.2310.
 #pod
 #pod =cut
 
@@ -1393,9 +1379,8 @@ sub tempfile {
                  "SUFFIX" => '',    # Template suffix
                  "UNLINK" => 0,     # Do not unlink file on exit
                  "OPEN"   => 1,     # Open file
-                 "TMPDIR" => 0,     # Place tempfile in tempdir if template specified
-                 "EXLOCK" => 0,     # Open file with O_EXLOCK
-                 "PERMS"  => undef, # File permissions
+                 "TMPDIR" => 0, # Place tempfile in tempdir if template specified
+                 "EXLOCK" => 0, # Open file with O_EXLOCK
                 );
 
   # Check to see whether we have an odd or even number of arguments
@@ -1472,13 +1457,12 @@ sub tempfile {
   my ($fh, $path, $errstr);
   croak "Error in tempfile() using template $template: $errstr"
     unless (($fh, $path) = _gettemp($template,
-                                    "open"             => $options{OPEN},
-                                    "mkdir"            => 0,
-                                    "unlink_on_close"  => $unlink_on_close,
-                                    "suffixlen"        => length($options{SUFFIX}),
-                                    "ErrStr"           => \$errstr,
-                                    "use_exlock"       => $options{EXLOCK},
-                                    "file_permissions" => $options{PERMS},
+                                    "open" => $options{'OPEN'},
+                                    "mkdir"=> 0 ,
+                                    "unlink_on_close" => $unlink_on_close,
+                                    "suffixlen" => length($options{'SUFFIX'}),
+                                    "ErrStr" => \$errstr,
+                                    "use_exlock" => $options{EXLOCK},
                                    ) );
 
   # Set up an exit handler that can do whatever is right for the
@@ -2585,7 +2569,7 @@ sub unlink1 {
 package ## hide from PAUSE
   File::Temp::Dir;
 
-our $VERSION = '0.2311';
+our $VERSION = '0.2309';
 
 use File::Path qw/ rmtree /;
 use strict;

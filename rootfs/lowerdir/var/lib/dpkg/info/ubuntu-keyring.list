@@ -2,6 +2,7 @@
 /etc
 /etc/apt
 /etc/apt/trusted.gpg.d
+/etc/apt/trusted.gpg.d/ubuntu-keyring-2012-archive.gpg
 /etc/apt/trusted.gpg.d/ubuntu-keyring-2012-cdimage.gpg
 /etc/apt/trusted.gpg.d/ubuntu-keyring-2018-archive.gpg
 /usr
