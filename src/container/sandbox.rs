@@ -385,7 +385,7 @@ fn handle_inner_child(
         "(inner child) Setting up container environment in root: {}",
         merged.display()
     );
-
+    
     // Redirect stdin/stdout/stderr
     // For TTY containers: redirect to PTY slave
     // For non-TTY containers: stdin -> /dev/null, stdout/stderr -> log files
@@ -497,10 +497,8 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<SandboxResult, String> {
     let upper = &config.upper_dir;
     let work = &config.work_dir;
     let merged = &config.merged_dir;
-    let proc_path = merged.join("proc");
-    let dev_path = merged.join("dev");
 
-    ensure_dirs_exist(&[lower, upper, work, merged, &proc_path, &dev_path])?;
+    ensure_dirs_exist(&[lower, upper, work, merged])?;
 
     mount_overlay(&lower, &upper, &work, &merged)?;
 
