@@ -64,3 +64,5 @@ pub const NAME_NOUNS: &[&str] = &[
     "shark",
     "ray",
 ];
+
+pub const ESCAPE_BYTE: u8 = 0x1B;

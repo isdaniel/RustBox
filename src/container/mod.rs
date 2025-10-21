@@ -127,6 +127,8 @@ pub struct Container {
     pub pid: Option<i32>,
 
     /// PTY master file descriptor for containers with TTY (None for non-TTY containers)
+    /// Note: This is not persisted across daemon restarts as FDs are process-specific
+    #[serde(skip)]
     pub pty_master: Option<std::os::unix::io::RawFd>,
 }
 

@@ -7,6 +7,7 @@ use rustbox::container::{
 use rustbox::error::{ContainerError, DaemonError};
 use rustbox::ipc::{read_message, write_message, ContainerSummary, DaemonRequest, DaemonResponse};
 use rustbox::storage::{delete_metadata, load_all_metadata, save_metadata, ContainerLogs};
+use tokio::fs::File;
 use std::collections::HashMap;
 use std::os::fd::{BorrowedFd, IntoRawFd};
 use std::os::unix::io::{AsRawFd, FromRawFd};
@@ -352,30 +353,26 @@ impl ContainerManager {
 
                     // Update container with PTY master FD and PID immediately
                     {
-                        let mut registry = registry_clone.write().await;
-                        if let Some(container) = registry.get_mut(&cid) {
-                            container.pty_master = result.pty_master;
-                            let _ = container.mark_started(result.child_pid.as_raw());
-                            let _ = save_metadata(container);
-
-                            // DEBUG: Verify PTY master FD is valid immediately after storing
-                            if let Some(fd) = result.pty_master {
-                                match unsafe { BorrowedFd::borrow_raw(fd) }.try_clone_to_owned() {
-                                    Ok(_) => {
+                    let mut registry = registry_clone.write().await;
+                    if let Some(container) = registry.get_mut(&cid) {
+                        container.pty_master = result.pty_master;
+                        let _ = container.mark_started(result.child_pid.as_raw());
+                        let _ = save_metadata(container);
+                        if let Some(fd) = result.pty_master {
+                            match unsafe { BorrowedFd::borrow_raw(fd) }.try_clone_to_owned() {
+                                Ok(_) => {
                                         info!(
                                             "PTY master FD {} is valid immediately after storage",
                                             fd
                                         );
-                                    }
-                                    Err(e) => {
+                                }
+                                Err(e) => {
                                         error!("PTY master FD {} is INVALID immediately after storage: {}", fd, e);
-                                    }
                                 }
                             }
                         }
                     }
-
-                    // Spawn a separate task to wait for container exit (don't await it!)
+                }                    // Spawn a separate task to wait for container exit (don't await it!)
                     let registry_clone2 = registry_clone.clone();
                     let cid2 = cid.clone();
                     tokio::spawn(async move {
@@ -680,8 +677,13 @@ impl ContainerManager {
             )));
         }
 
-        // For now, we'll implement a simplified version that checks the configuration
-        // TODO: Implement proper PTY master tracking during container startup
+        // Validate that PTY master FD is actually available
+        // This ensures the container startup completed successfully and PTY is ready
+        if container.pty_master.is_none() {
+            return Err(DaemonError::Container(ContainerError::ConfigError(
+                "Container PTY master file descriptor is not available. Container may still be initializing.".to_string(),
+            )));
+        }
 
         Ok(DaemonResponse::AttachResponse {
             container_id,
@@ -762,12 +764,13 @@ impl ContainerManager {
         // 2. into_raw_fd() transfers ownership from OwnedFd to RawFd without dropping
         // 3. Each File takes unique ownership of its own duplicated FD copy
         // 4. No other code references these specific FD numbers after this point
-        let pty_read_file = tokio::fs::File::from_std(unsafe {
-            std::fs::File::from_raw_fd(pty_read_fd.into_raw_fd())
-        });
-        let mut pty_write_file = tokio::fs::File::from_std(unsafe {
-            std::fs::File::from_raw_fd(pty_write_fd.into_raw_fd())
-        });
+        let pty_read_file = unsafe {
+            File::from_raw_fd(pty_read_fd.into_raw_fd())
+        };
+
+        let mut pty_write_file = unsafe {
+            File::from_raw_fd(pty_write_fd.into_raw_fd())
+        };
 
         // Split the Unix stream for bidirectional communication
         let (mut stream_read, mut stream_write) = stream.into_split();
