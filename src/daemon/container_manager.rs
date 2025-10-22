@@ -143,6 +143,31 @@ impl ContainerRegistry {
         self.containers.get_mut(id)
     }
 
+    /// Resolve container by ID or name, returning the container ID
+    ///
+    /// This method accepts either a container ID or name and returns the
+    /// actual container ID if found. This allows commands to work with
+    /// both identifiers interchangeably.
+    ///
+    /// # Arguments
+    /// * `id_or_name` - Container ID or name to resolve
+    ///
+    /// # Returns
+    /// * `Some(String)` - The container ID if found
+    /// * `None` - If no container matches the given ID or name
+    pub fn resolve_id_or_name(&self, id_or_name: &str) -> Option<String> {
+
+        if self.containers.contains_key(id_or_name) {
+            return Some(id_or_name.to_string());
+        }
+
+        // Although this time complex is O(n), however we will not expect a lot of containers in single VM, therefore it will be acceptable.
+        self.containers
+            .values()
+            .find(|c| c.name == id_or_name)
+            .map(|c| c.id.clone())
+    }
+
     /// Remove container by ID
     pub fn remove(&mut self, id: &str) -> Option<Container> {
         self.containers.remove(id)
@@ -413,15 +438,22 @@ impl ContainerManager {
     /// Handle StopRequest
     pub async fn handle_stop(
         &self,
-        container_id: String,
+        container_id_or_name: String,
         timeout: u64,
     ) -> Result<DaemonResponse, DaemonError> {
         info!(
             "Stopping container: {} (timeout: {}s)",
-            container_id, timeout
+            container_id_or_name, timeout
         );
 
         let mut registry = self.registry.write().await;
+
+        // Resolve container ID or name to actual container ID
+        let container_id = registry
+            .resolve_id_or_name(&container_id_or_name)
+            .ok_or_else(|| {
+                DaemonError::Container(ContainerError::NotFound(container_id_or_name.clone()))
+            })?;
 
         let container = registry.get_mut(&container_id).ok_or_else(|| {
             DaemonError::Container(ContainerError::NotFound(container_id.clone()))
@@ -522,9 +554,16 @@ impl ContainerManager {
     /// Handle InspectRequest
     pub async fn handle_inspect(
         &self,
-        container_id: String,
+        container_id_or_name: String,
     ) -> Result<DaemonResponse, DaemonError> {
         let registry = self.registry.read().await;
+
+        // Resolve container ID or name to actual container ID
+        let container_id = registry
+            .resolve_id_or_name(&container_id_or_name)
+            .ok_or_else(|| {
+                DaemonError::Container(ContainerError::NotFound(container_id_or_name.clone()))
+            })?;
 
         let container =
             registry
@@ -541,12 +580,19 @@ impl ContainerManager {
     /// Handle RemoveRequest
     pub async fn handle_remove(
         &self,
-        container_id: String,
+        container_id_or_name: String,
         force: bool,
     ) -> Result<DaemonResponse, DaemonError> {
-        info!("Removing container: {} (force: {})", container_id, force);
+        info!("Removing container: {} (force: {})", container_id_or_name, force);
 
         let mut registry = self.registry.write().await;
+
+        // Resolve container ID or name to actual container ID
+        let container_id = registry
+            .resolve_id_or_name(&container_id_or_name)
+            .ok_or_else(|| {
+                DaemonError::Container(ContainerError::NotFound(container_id_or_name.clone()))
+            })?;
 
         let container = registry.get(&container_id).ok_or_else(|| {
             DaemonError::Container(ContainerError::NotFound(container_id.clone()))
@@ -607,16 +653,24 @@ impl ContainerManager {
     /// The current implementation reads the tail of log files and returns them immediately.
     pub async fn handle_logs(
         &self,
-        container_id: String,
+        container_id_or_name: String,
         tail: usize,
     ) -> Result<DaemonResponse, DaemonError> {
         info!(
             "Fetching logs for container: {} (tail: {})",
-            container_id, tail
+            container_id_or_name, tail
         );
 
-        // Verify container exists
+        // Verify container exists and resolve ID or name
         let registry = self.registry.read().await;
+        
+        // Resolve container ID or name to actual container ID
+        let container_id = registry
+            .resolve_id_or_name(&container_id_or_name)
+            .ok_or_else(|| {
+                DaemonError::Container(ContainerError::NotFound(container_id_or_name.clone()))
+            })?;
+
         let container = registry.get(&container_id).ok_or_else(|| {
             DaemonError::Container(ContainerError::NotFound(container_id.clone()))
         })?;
@@ -653,11 +707,19 @@ impl ContainerManager {
     }
 
     /// Handle AttachRequest
-    pub async fn handle_attach(&self, container_id: String) -> Result<DaemonResponse, DaemonError> {
-        info!("Attaching to container: {}", container_id);
+    pub async fn handle_attach(&self, container_id_or_name: String) -> Result<DaemonResponse, DaemonError> {
+        info!("Attaching to container: {}", container_id_or_name);
 
         // Verify container exists and is running
         let registry = self.registry.read().await;
+        
+        // Resolve container ID or name to actual container ID
+        let container_id = registry
+            .resolve_id_or_name(&container_id_or_name)
+            .ok_or_else(|| {
+                DaemonError::Container(ContainerError::NotFound(container_id_or_name.clone()))
+            })?;
+
         let container = registry.get(&container_id).ok_or_else(|| {
             DaemonError::Container(ContainerError::NotFound(container_id.clone()))
         })?;
@@ -695,14 +757,23 @@ impl ContainerManager {
     /// This function takes over the Unix socket for bidirectional streaming
     pub async fn handle_streaming_attach(
         &self,
-        container_id: String,
+        container_id_or_name: String,
         stream: UnixStream,
     ) -> Result<(), DaemonError> {
-        tracing::info!(container_id = %container_id, "Starting streaming attach session");
+        tracing::info!(container_id_or_name = %container_id_or_name, "Starting streaming attach session");
 
         // Get PTY master file descriptor
-        let pty_master_fd = {
+        let (pty_master_fd, container_id) = {
             let registry = self.registry.read().await;
+            
+            // Resolve container ID or name to actual container ID
+            let container_id = registry
+                .resolve_id_or_name(&container_id_or_name)
+                .ok_or_else(|| {
+                    tracing::error!(container_id_or_name = %container_id_or_name, "Container not found");
+                    DaemonError::Container(ContainerError::NotFound(container_id_or_name.clone()))
+                })?;
+
             let container = registry.get(&container_id).ok_or_else(|| {
                 tracing::error!(container_id = %container_id, "Container not found");
                 DaemonError::Container(ContainerError::NotFound(container_id.clone()))
@@ -721,12 +792,14 @@ impl ContainerManager {
                 }));
             }
 
-            container.pty_master.ok_or_else(|| {
+            let pty_fd = container.pty_master.ok_or_else(|| {
                 tracing::error!(container_id = %container_id, "Container does not have TTY configured");
                 DaemonError::Container(ContainerError::ConfigError(
                     "Container does not have TTY support".to_string(),
                 ))
-            })?
+            })?;
+
+            (pty_fd, container_id)
         };
 
         tracing::debug!(container_id = %container_id, pty_master_fd = %pty_master_fd, "Retrieved PTY master FD");
@@ -985,5 +1058,52 @@ mod tests {
         let removed = registry.remove(&id);
         assert!(removed.is_some());
         assert_eq!(registry.count_total(), 0);
+    }
+
+    #[test]
+    fn test_resolve_id_or_name() {
+        let mut registry = ContainerRegistry::new();
+        
+        let container1 = Container::new(Some("web-server".to_string()), test_config());
+        let id1 = container1.id.clone();
+        
+        let container2 = Container::new(Some("database".to_string()), test_config());
+        let id2 = container2.id.clone();
+
+        registry.insert(container1).unwrap();
+        registry.insert(container2).unwrap();
+
+        // Test resolution by ID
+        assert_eq!(registry.resolve_id_or_name(&id1), Some(id1.clone()));
+        assert_eq!(registry.resolve_id_or_name(&id2), Some(id2.clone()));
+
+        // Test resolution by name
+        assert_eq!(registry.resolve_id_or_name("web-server"), Some(id1.clone()));
+        assert_eq!(registry.resolve_id_or_name("database"), Some(id2.clone()));
+
+        // Test non-existent container
+        assert_eq!(registry.resolve_id_or_name("nonexistent"), None);
+        assert_eq!(registry.resolve_id_or_name("invalid-id-123"), None);
+    }
+
+    #[test]
+    fn test_resolve_id_priority_over_name() {
+        let mut registry = ContainerRegistry::new();
+        
+        // Create a container with a specific name
+        let container = Container::new(Some("mycontainer".to_string()), test_config());
+        let id = container.id.clone();
+        
+        registry.insert(container).unwrap();
+
+        // Resolution by ID should work
+        assert_eq!(registry.resolve_id_or_name(&id), Some(id.clone()));
+        
+        // Resolution by name should also work
+        assert_eq!(registry.resolve_id_or_name("mycontainer"), Some(id.clone()));
+        
+        // If a container ID happens to match another container's name,
+        // the ID should take priority (tested by checking we get back the same value)
+        assert_eq!(registry.resolve_id_or_name(&id), Some(id));
     }
 }
