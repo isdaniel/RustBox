@@ -339,12 +339,6 @@ fn setup_container_environment(config: &SandboxConfig, merged: &Path) -> Result<
     );
     chdir(config.workdir.as_str()).map_err(|e| format!("chdir failed: {e}"))?;
 
-    // Only do this inside the container, after chroot/chdir
-    if let Err(e) = chown_recursive(Path::new("."), 65534, 65534) {
-        warn!("Failed to chown workdir recursively to nobody: {}", e);
-    } else {
-        info!("Successfully chowned workdir to nobody (65534:65534)");
-    }
 
     Ok(())
 }
@@ -440,9 +434,20 @@ fn run_in_namespace_and_wait(
             | CloneFlags::CLONE_NEWUTS
             | CloneFlags::CLONE_NEWIPC
             | CloneFlags::CLONE_NEWNET
-            | CloneFlags::CLONE_NEWUSER,
+            //| CloneFlags::CLONE_NEWUSER,
     )
     .map_err(|e| format!("unshare failed: {e}"))?;
+
+    // CRITICAL: Make all mounts private to prevent mount/unmount events from propagating to the parent namespace. Modern systemd makes all mounts MS_SHARED by default,which would cause our container's unmounts to affect the host system.This is standard practice for all container runtimes (Docker, runc, etc.).
+    info!("Making all mounts private to isolate from host...");
+    mount(
+        None::<&str>,
+        "/",
+        None::<&str>,
+        MsFlags::MS_PRIVATE | MsFlags::MS_REC,
+        None::<&str>,
+    )
+    .map_err(|e| format!("failed to make mounts private: {e}"))?;
 
     info!("Namespaces created successfully, forking inner process...");
 
