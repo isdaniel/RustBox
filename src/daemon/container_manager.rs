@@ -7,12 +7,12 @@ use rustbox::container::{
 use rustbox::error::{ContainerError, DaemonError};
 use rustbox::ipc::{read_message, write_message, ContainerSummary, DaemonRequest, DaemonResponse};
 use rustbox::storage::{delete_metadata, load_all_metadata, save_metadata, ContainerLogs};
-use tokio::fs::File;
 use std::collections::HashMap;
 use std::os::fd::{BorrowedFd, IntoRawFd};
 use std::os::unix::io::{AsRawFd, FromRawFd};
 use std::sync::Arc;
 use std::time::SystemTime;
+use tokio::fs::File;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::UnixStream;
 use tokio::sync::RwLock;
@@ -156,7 +156,6 @@ impl ContainerRegistry {
     /// * `Some(String)` - The container ID if found
     /// * `None` - If no container matches the given ID or name
     pub fn resolve_id_or_name(&self, id_or_name: &str) -> Option<String> {
-
         if self.containers.contains_key(id_or_name) {
             return Some(id_or_name.to_string());
         }
@@ -378,26 +377,26 @@ impl ContainerManager {
 
                     // Update container with PTY master FD and PID immediately
                     {
-                    let mut registry = registry_clone.write().await;
-                    if let Some(container) = registry.get_mut(&cid) {
-                        container.pty_master = result.pty_master;
-                        let _ = container.mark_started(result.child_pid.as_raw());
-                        let _ = save_metadata(container);
-                        if let Some(fd) = result.pty_master {
-                            match unsafe { BorrowedFd::borrow_raw(fd) }.try_clone_to_owned() {
-                                Ok(_) => {
+                        let mut registry = registry_clone.write().await;
+                        if let Some(container) = registry.get_mut(&cid) {
+                            container.pty_master = result.pty_master;
+                            let _ = container.mark_started(result.child_pid.as_raw());
+                            let _ = save_metadata(container);
+                            if let Some(fd) = result.pty_master {
+                                match unsafe { BorrowedFd::borrow_raw(fd) }.try_clone_to_owned() {
+                                    Ok(_) => {
                                         info!(
                                             "PTY master FD {} is valid immediately after storage",
                                             fd
                                         );
-                                }
-                                Err(e) => {
+                                    }
+                                    Err(e) => {
                                         error!("PTY master FD {} is INVALID immediately after storage: {}", fd, e);
+                                    }
                                 }
                             }
                         }
-                    }
-                }                    // Spawn a separate task to wait for container exit (don't await it!)
+                    } // Spawn a separate task to wait for container exit (don't await it!)
                     let registry_clone2 = registry_clone.clone();
                     let cid2 = cid.clone();
                     tokio::spawn(async move {
@@ -583,7 +582,10 @@ impl ContainerManager {
         container_id_or_name: String,
         force: bool,
     ) -> Result<DaemonResponse, DaemonError> {
-        info!("Removing container: {} (force: {})", container_id_or_name, force);
+        info!(
+            "Removing container: {} (force: {})",
+            container_id_or_name, force
+        );
 
         let mut registry = self.registry.write().await;
 
@@ -663,7 +665,7 @@ impl ContainerManager {
 
         // Verify container exists and resolve ID or name
         let registry = self.registry.read().await;
-        
+
         // Resolve container ID or name to actual container ID
         let container_id = registry
             .resolve_id_or_name(&container_id_or_name)
@@ -707,12 +709,15 @@ impl ContainerManager {
     }
 
     /// Handle AttachRequest
-    pub async fn handle_attach(&self, container_id_or_name: String) -> Result<DaemonResponse, DaemonError> {
+    pub async fn handle_attach(
+        &self,
+        container_id_or_name: String,
+    ) -> Result<DaemonResponse, DaemonError> {
         info!("Attaching to container: {}", container_id_or_name);
 
         // Verify container exists and is running
         let registry = self.registry.read().await;
-        
+
         // Resolve container ID or name to actual container ID
         let container_id = registry
             .resolve_id_or_name(&container_id_or_name)
@@ -765,7 +770,7 @@ impl ContainerManager {
         // Get PTY master file descriptor
         let (pty_master_fd, container_id) = {
             let registry = self.registry.read().await;
-            
+
             // Resolve container ID or name to actual container ID
             let container_id = registry
                 .resolve_id_or_name(&container_id_or_name)
@@ -837,13 +842,9 @@ impl ContainerManager {
         // 2. into_raw_fd() transfers ownership from OwnedFd to RawFd without dropping
         // 3. Each File takes unique ownership of its own duplicated FD copy
         // 4. No other code references these specific FD numbers after this point
-        let pty_read_file = unsafe {
-            File::from_raw_fd(pty_read_fd.into_raw_fd())
-        };
+        let pty_read_file = unsafe { File::from_raw_fd(pty_read_fd.into_raw_fd()) };
 
-        let mut pty_write_file = unsafe {
-            File::from_raw_fd(pty_write_fd.into_raw_fd())
-        };
+        let mut pty_write_file = unsafe { File::from_raw_fd(pty_write_fd.into_raw_fd()) };
 
         // Split the Unix stream for bidirectional communication
         let (mut stream_read, mut stream_write) = stream.into_split();
@@ -1063,10 +1064,10 @@ mod tests {
     #[test]
     fn test_resolve_id_or_name() {
         let mut registry = ContainerRegistry::new();
-        
+
         let container1 = Container::new(Some("web-server".to_string()), test_config());
         let id1 = container1.id.clone();
-        
+
         let container2 = Container::new(Some("database".to_string()), test_config());
         let id2 = container2.id.clone();
 
@@ -1089,19 +1090,19 @@ mod tests {
     #[test]
     fn test_resolve_id_priority_over_name() {
         let mut registry = ContainerRegistry::new();
-        
+
         // Create a container with a specific name
         let container = Container::new(Some("mycontainer".to_string()), test_config());
         let id = container.id.clone();
-        
+
         registry.insert(container).unwrap();
 
         // Resolution by ID should work
         assert_eq!(registry.resolve_id_or_name(&id), Some(id.clone()));
-        
+
         // Resolution by name should also work
         assert_eq!(registry.resolve_id_or_name("mycontainer"), Some(id.clone()));
-        
+
         // If a container ID happens to match another container's name,
         // the ID should take priority (tested by checking we get back the same value)
         assert_eq!(registry.resolve_id_or_name(&id), Some(id));

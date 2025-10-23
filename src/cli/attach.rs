@@ -62,8 +62,7 @@ pub async fn execute(args: AttachArgs) -> Result<(), IpcError> {
     }
 }
 
-
-/// "echo $TERM" & "infocmp $TERM" commands often return escape codes for special keys, below mapping is based on xterm-256color. 
+/// "echo $TERM" & "infocmp $TERM" commands often return escape codes for special keys, below mapping is based on xterm-256color.
 /// basic VT 100 escape codes: https://espterm.github.io/docs/VT100%20escape%20codes.html
 /// Convert a termion Key to raw bytes that should be sent to the PTY
 fn key_to_bytes(key: Key) -> Vec<u8> {
@@ -75,6 +74,12 @@ fn key_to_bytes(key: Key) -> Vec<u8> {
         // Control characters
         Key::Ctrl(c) => {
             // Convert Ctrl+letter to control code (Ctrl+A = 1, Ctrl+B = 2, etc.)
+
+            // re-write ctrl + z => ctrl + c
+            if c == 'z' {
+                return vec![0x03];
+            }
+
             let ctrl_byte = (c as u8).wrapping_sub(b'a').wrapping_add(1);
             vec![ctrl_byte]
         }
@@ -85,14 +90,14 @@ fn key_to_bytes(key: Key) -> Vec<u8> {
         // Special keys
         Key::Backspace => vec![0x08], // ASCII backspace (or 0x7F for some terminals)
         Key::Delete => vec![ESCAPE_BYTE, b'[', b'3', b'~'], // ESC[3~
-        Key::Esc => vec![ESCAPE_BYTE],       // ESC key
+        Key::Esc => vec![ESCAPE_BYTE], // ESC key
         Key::Null => vec![0x00],      // NULL byte
 
         // Arrow keys - ANSI escape sequences
-        Key::Up => vec![ESCAPE_BYTE, b'[', b'A'],    // ESC[A
-        Key::Down => vec![ESCAPE_BYTE, b'[', b'B'],  // ESC[B
+        Key::Up => vec![ESCAPE_BYTE, b'[', b'A'],   // ESC[A
+        Key::Down => vec![ESCAPE_BYTE, b'[', b'B'], // ESC[B
         Key::Right => vec![ESCAPE_BYTE, b'[', b'C'], // ESC[C
-        Key::Left => vec![ESCAPE_BYTE, b'[', b'D'],  // ESC[D
+        Key::Left => vec![ESCAPE_BYTE, b'[', b'D'], // ESC[D
 
         // Modified arrow keys
         Key::ShiftUp => vec![ESCAPE_BYTE, b'[', b'1', b';', b'2', b'A'],
@@ -111,7 +116,7 @@ fn key_to_bytes(key: Key) -> Vec<u8> {
         Key::AltLeft => vec![ESCAPE_BYTE, b'[', b'1', b';', b'3', b'D'],
 
         // Navigation keys
-        Key::Home => vec![ESCAPE_BYTE, b'O', b'H'], // ESC OH 
+        Key::Home => vec![ESCAPE_BYTE, b'O', b'H'], // ESC OH
         Key::End => vec![ESCAPE_BYTE, b'O', b'F'],  // ESC OF
         Key::PageUp => vec![ESCAPE_BYTE, b'[', b'5', b'~'], // ESC[5~
         Key::PageDown => vec![ESCAPE_BYTE, b'[', b'6', b'~'], // ESC[6~
@@ -172,7 +177,6 @@ async fn streaming_attach_session(container_id: &str, stream: UnixStream) -> Res
         loop {
             match read_message(&mut stream_read).await {
                 Ok(DaemonResponse::AttachStdout { data }) => {
-
                     // Write container output to our stdout
                     if let Err(e) = io::stdout().write_all(&data) {
                         tracing::error!("\r\nError writing output: {e}\r");
@@ -201,21 +205,10 @@ async fn streaming_attach_session(container_id: &str, stream: UnixStream) -> Res
 
     // Handle user input in main thread
     let stdin = io::stdin();
-    let mut detach_sequence = DetachSequence::new();
 
     for key_result in stdin.keys() {
         match key_result {
             Ok(key) => {
-                if detach_sequence.handle_key(key) {
-                    tracing::info!("\r\nDetaching from container {container_id}\r");
-                    // Send detach request
-                    let detach_request = DaemonRequest::AttachDetach;
-                    if let Err(e) = write_message(&mut stream_write, &detach_request).await {
-                        tracing::error!("Error sending detach request: {e}");
-                    }
-                    break;
-                }
-
                 // Handle Ctrl+C specially to exit
                 if matches!(key, Key::Ctrl('c')) {
                     tracing::info!("\r\nExiting attach session\r");
@@ -245,90 +238,4 @@ async fn streaming_attach_session(container_id: &str, stream: UnixStream) -> Res
     // Clean up
     output_task.abort();
     Ok(())
-}
-
-/// State machine for detecting Ctrl+P Ctrl+Q detach sequence
-///
-/// This implements the Docker-compatible detach sequence where users press
-/// Ctrl+P followed by Ctrl+Q to gracefully detach from a container without
-/// stopping it.
-///
-/// # State Transitions
-///
-/// - **Normal**: Initial state, waiting for Ctrl+P
-///   - On Ctrl+P: transitions to `CtrlP` state
-///   - On any other key: remains in `Normal` state
-///
-/// - **CtrlP**: Ctrl+P was pressed, waiting for Ctrl+Q
-///   - On Ctrl+Q: detach sequence complete, returns `true`
-///   - On any other key: resets to `Normal` state
-/// ```
-struct DetachSequence {
-    state: DetachState,
-}
-
-#[derive(Debug, PartialEq, Copy, Clone)]
-enum DetachState {
-    Normal,
-    CtrlP,
-}
-
-impl DetachSequence {
-    fn new() -> Self {
-        Self {
-            state: DetachState::Normal,
-        }
-    }
-
-    /// Handle a key press and return true if detach sequence is complete
-    fn handle_key(&mut self, key: Key) -> bool {
-        match (self.state, key) {
-            (DetachState::Normal, Key::Ctrl('p')) => {
-                self.state = DetachState::CtrlP;
-                false
-            }
-            (DetachState::CtrlP, Key::Ctrl('q')) => {
-                self.state = DetachState::Normal;
-                true // Detach sequence detected
-            }
-            _ => {
-                self.state = DetachState::Normal;
-                false
-            }
-        }
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_detach_sequence() {
-        let mut seq = DetachSequence::new();
-
-        // Normal keys should not trigger detach
-        assert!(!seq.handle_key(Key::Char('a')));
-        assert!(!seq.handle_key(Key::Ctrl('c')));
-
-        // Ctrl+P alone should not trigger detach
-        assert!(!seq.handle_key(Key::Ctrl('p')));
-        // Reset state by pressing another key
-        assert!(!seq.handle_key(Key::Char('x')));
-
-        // Ctrl+P followed by Ctrl+Q should trigger detach
-        assert!(!seq.handle_key(Key::Ctrl('p')));
-        assert!(seq.handle_key(Key::Ctrl('q')));
-
-        // Reset after detach
-        assert!(!seq.handle_key(Key::Char('a')));
-
-        // Ctrl+P followed by something else should not trigger detach
-        assert!(!seq.handle_key(Key::Ctrl('p')));
-        assert!(!seq.handle_key(Key::Char('a')));
-
-        // Test another successful detach sequence
-        assert!(!seq.handle_key(Key::Ctrl('p')));
-        assert!(seq.handle_key(Key::Ctrl('q')));
-    }
 }

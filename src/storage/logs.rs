@@ -109,7 +109,7 @@ impl ContainerLogs {
     }
 }
 
-impl Drop for ContainerLogs{
+impl Drop for ContainerLogs {
     fn drop(&mut self) {
         let _ = self.cleanup();
     }

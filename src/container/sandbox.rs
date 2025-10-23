@@ -6,14 +6,14 @@ use nix::{
     sys::wait::waitpid,
     unistd::{chdir, chroot, close, execv, fork, ForkResult},
 };
+use std::io::Write;
 use std::{
     ffi::CString,
-    fs::{create_dir_all, read_dir, read_to_string, remove_dir, write, OpenOptions},
+    fs::{create_dir_all, read_to_string, remove_dir, write, OpenOptions},
     os::unix::io::{IntoRawFd, RawFd},
     path::{Path, PathBuf},
     process,
 };
-use std::{fs::symlink_metadata, io::Write};
 use tracing::{error, info, warn};
 
 #[derive(Debug, Clone)]
@@ -339,7 +339,6 @@ fn setup_container_environment(config: &SandboxConfig, merged: &Path) -> Result<
     );
     chdir(config.workdir.as_str()).map_err(|e| format!("chdir failed: {e}"))?;
 
-
     Ok(())
 }
 
@@ -379,7 +378,7 @@ fn handle_inner_child(
         "(inner child) Setting up container environment in root: {}",
         merged.display()
     );
-    
+
     // Redirect stdin/stdout/stderr
     // For TTY containers: redirect to PTY slave
     // For non-TTY containers: stdin -> /dev/null, stdout/stderr -> log files
@@ -433,8 +432,7 @@ fn run_in_namespace_and_wait(
             | CloneFlags::CLONE_NEWPID
             | CloneFlags::CLONE_NEWUTS
             | CloneFlags::CLONE_NEWIPC
-            | CloneFlags::CLONE_NEWNET
-            //| CloneFlags::CLONE_NEWUSER,
+            | CloneFlags::CLONE_NEWNET, //| CloneFlags::CLONE_NEWUSER,
     )
     .map_err(|e| format!("unshare failed: {e}"))?;
 
@@ -462,23 +460,6 @@ fn run_in_namespace_and_wait(
         Ok(ForkResult::Parent { child, .. }) => handle_inner_parent(child, merged, pty_slave_fd),
         Err(e) => Err(format!("inner fork failed: {e}")),
     }
-}
-
-// Recursively chown workdir to nobody (UID/GID 65534)
-fn chown_recursive(path: &Path, uid: u32, gid: u32) -> std::io::Result<()> {
-    let meta = symlink_metadata(path)?;
-    if let Some(p) = path.to_str() {
-        unsafe {
-            libc::chown(p.as_ptr() as *const i8, uid, gid);
-        }
-    }
-    if meta.is_dir() {
-        for entry in read_dir(path)? {
-            let entry = entry?;
-            chown_recursive(&entry.path(), uid, gid)?;
-        }
-    }
-    Ok(())
 }
 
 /// Result of starting a sandbox, containing PTY master FD and child PID
