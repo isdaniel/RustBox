@@ -169,6 +169,8 @@ mod tests {
             workdir: "/".to_string(),
             rootfs_path: "./rootfs".to_string(),
             tty: false,
+            isolate_user: false,
+            isolate_network: false,
         }
     }
 

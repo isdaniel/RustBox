@@ -27,7 +27,7 @@ pub async fn execute(args: AttachArgs) -> Result<(), IpcError> {
     tracing::debug!("Connected to daemon, sending attach request");
     // Send initial attach request
     let request = DaemonRequest::AttachRequest {
-        container_id: args.container_id.clone(),
+        container_id: args.container_id,
     };
 
     write_message(&mut stream, &request).await?;
@@ -44,7 +44,7 @@ pub async fn execute(args: AttachArgs) -> Result<(), IpcError> {
 
             // Start real streaming attach session
             tracing::debug!("Starting streaming attach session");
-            streaming_attach_session(&args.container_id, stream).await?;
+            streaming_attach_session(&container_id, stream).await?;
 
             tracing::info!("Attach session ended");
             Ok(())

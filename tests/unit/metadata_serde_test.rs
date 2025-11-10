@@ -10,6 +10,8 @@ fn test_container_metadata_serialization() {
         workdir: "/".to_string(),
         rootfs_path: "./rootfs".to_string(),
         tty: false,
+        isolate_user: false,
+        isolate_network: false,
     };
     
     let container = Container::new(Some("test_container".to_string()), config);
@@ -40,6 +42,8 @@ fn test_container_metadata_round_trip() {
         workdir: "/home".to_string(),
         rootfs_path: "/var/rootfs".to_string(),
         tty: false,
+        isolate_user: false,
+        isolate_network: false,
     };
     
     let mut container = Container::new(None, config);
@@ -73,6 +77,8 @@ fn test_container_metadata_with_different_states() {
         workdir: "/tmp".to_string(),
         rootfs_path: "./test-rootfs".to_string(),
         tty: false,
+        isolate_user: false,
+        isolate_network: false,
     };
     
     // Test Created state

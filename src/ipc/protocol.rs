@@ -17,6 +17,10 @@ pub enum DaemonRequest {
         rootfs_path: String,
         #[serde(default)]
         tty: bool,
+        #[serde(default)]
+        isolate_user: bool,
+        #[serde(default)]
+        isolate_network: bool,
     },
     StopRequest {
         container_id: String,
@@ -162,6 +166,8 @@ impl DaemonRequest {
                 workdir,
                 rootfs_path,
                 tty,
+                isolate_user,
+                isolate_network,
                 ..
             } => Some(ContainerConfig {
                 memory_limit: memory_limit.clone(),
@@ -170,6 +176,8 @@ impl DaemonRequest {
                 workdir: workdir.clone(),
                 rootfs_path: rootfs_path.clone(),
                 tty: *tty,
+                isolate_user: *isolate_user,
+                isolate_network: *isolate_network,
             }),
             _ => None,
         }

@@ -156,6 +156,8 @@ async fn process_request(
             workdir,
             rootfs_path,
             tty,
+            isolate_user,
+            isolate_network,
         } => {
             let config = rustbox::container::ContainerConfig {
                 memory_limit,
@@ -164,6 +166,8 @@ async fn process_request(
                 workdir,
                 rootfs_path,
                 tty,
+                isolate_user,
+                isolate_network,
             };
 
             match container_manager.handle_run(name, config).await {
@@ -236,7 +240,7 @@ async fn process_request(
         DaemonRequest::AttachRequest { container_id } => {
             // Attach functionality is delegated to container manager
             // The actual PTY forwarding implementation is pending
-            match container_manager.handle_attach(container_id).await {
+            match container_manager.handle_attach(&container_id).await {
                 Ok(response) => response,
                 Err(e) => DaemonResponse::ErrorResponse {
                     message: e.to_string(),

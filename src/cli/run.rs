@@ -29,6 +29,14 @@ pub struct RunArgs {
     #[arg(long)]
     pub tty: bool,
 
+    /// Isolate user namespace (CLONE_NEWUSER)
+    #[arg(long)]
+    pub isolate_user: bool,
+
+    /// Isolate network namespace (CLONE_NEWNET)
+    #[arg(long)]
+    pub isolate_network: bool,
+
     /// Command to execute in the container
     #[arg(required = true, num_args = 1..)]
     pub command: Vec<String>,
@@ -45,6 +53,8 @@ pub async fn run_command(args: RunArgs) -> Result<(), IpcError> {
         workdir: args.workdir,
         rootfs_path: args.rootfs,
         tty: args.tty,
+        isolate_user: args.isolate_user,
+        isolate_network: args.isolate_network,
     };
 
     let response = client.send_request(request).await?;
