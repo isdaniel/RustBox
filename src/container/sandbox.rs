@@ -29,6 +29,8 @@ pub struct SandboxConfig {
     pub stdout_log_path: Option<String>,
     pub stderr_log_path: Option<String>,
     pub tty: bool,
+    pub isolate_user: bool,
+    pub isolate_network: bool,
 }
 
 /// Move any remaining PIDs in cgroup back to root cgroup before removing directory.
@@ -77,7 +79,7 @@ fn generate_cgroup_path() -> PathBuf {
 fn setup_cgroup(config: &SandboxConfig, cgroup_path: &Path, pid: u32) -> Result<(), String> {
     create_dir_all(cgroup_path).map_err(|e| format!("failed to create cgroup path: {e}"))?;
 
-    write(cgroup_path.join("memory.max"), config.memory_limit.clone())
+    write(cgroup_path.join("memory.max"), &config.memory_limit)
         .map_err(|e| format!("Failed to set memory limit: {e}"))?;
 
     let cpu_quota = parse_cpu_limit(&config.cpu_limit)?;
@@ -152,6 +154,42 @@ fn mount_proc_and_dev(merged: &Path) -> Result<(), String> {
         None::<&str>,
     )
     .map_err(|e| format!("mount /dev failed: {e}"))?;
+
+    // Bind-mount /etc/resolv.conf for DNS resolution
+    let resolv_path = merged.join("etc/resolv.conf");
+    if std::path::Path::new("/etc/resolv.conf").exists() {
+        info!("Bind-mounting /etc/resolv.conf at: {}", resolv_path.display());
+        // Ensure the target file exists (even if empty) for bind mounting
+        if !resolv_path.exists() {
+            if let Err(e) = std::fs::File::create(&resolv_path) {
+                warn!("Failed to create resolv.conf placeholder: {}", e);
+            }
+        }
+        mount(
+            Some("/etc/resolv.conf"),
+            &resolv_path,
+            None::<&str>,
+            MsFlags::MS_BIND,
+            None::<&str>,
+        )
+        .map_err(|e| format!("mount /etc/resolv.conf failed: {e}"))?;
+    }
+
+    // Mount tmpfs on /tmp for writable temporary storage
+    let tmp_path = merged.join("tmp");
+    if let Err(e) = std::fs::create_dir_all(&tmp_path) {
+        warn!("Failed to create /tmp directory: {}", e);
+    } else {
+        info!("Mounting tmpfs at: {}", tmp_path.display());
+        mount(
+            Some("tmpfs"),
+            &tmp_path,
+            Some("tmpfs"),
+            MsFlags::MS_NOSUID | MsFlags::MS_NODEV,
+            Some("mode=1777,size=65536k"), // 64MB limit, world-writable with sticky bit
+        )
+        .map_err(|e| format!("mount tmpfs on /tmp failed: {e}"))?;
+    }
 
     Ok(())
 }
@@ -351,7 +389,7 @@ fn execute_command(config: &SandboxConfig) -> Result<(), String> {
             .command
             .first()
             .ok_or("Command vector is empty")?
-            .clone(),
+            .as_str(),
     )
     .map_err(|e| format!("Invalid program path: {e}"))?;
 
@@ -359,7 +397,7 @@ fn execute_command(config: &SandboxConfig) -> Result<(), String> {
     let args: Result<Vec<CString>, _> = config
         .command
         .iter()
-        .map(|arg| CString::new(arg.clone()))
+        .map(|arg| CString::new(arg.as_str()))
         .collect();
     let args = args.map_err(|e| format!("Invalid command argument: {e}"))?;
 
@@ -411,8 +449,11 @@ fn handle_inner_parent(
     let _ = waitpid(child, None);
 
     info!("(inner parent) Cleaning up mounts inside namespace...");
-    umount_detach(&merged.join("proc"));
+    // Unmount in reverse order of mounting to avoid dependency issues
+    umount_detach(&merged.join("tmp"));
+    umount_detach(&merged.join("etc/resolv.conf"));
     umount_detach(&merged.join("dev"));
+    umount_detach(&merged.join("proc"));
 
     Ok(())
 }
@@ -427,14 +468,25 @@ fn run_in_namespace_and_wait(
     }
 
     info!("Creating namespaces...");
-    unshare(
-        CloneFlags::CLONE_NEWNS
-            | CloneFlags::CLONE_NEWPID
-            | CloneFlags::CLONE_NEWUTS
-            | CloneFlags::CLONE_NEWIPC
-            | CloneFlags::CLONE_NEWNET, //| CloneFlags::CLONE_NEWUSER,
-    )
-    .map_err(|e| format!("unshare failed: {e}"))?;
+    
+    // Build namespace flags based on configuration
+    let mut clone_flags = CloneFlags::CLONE_NEWNS
+        | CloneFlags::CLONE_NEWPID
+        | CloneFlags::CLONE_NEWUTS
+        | CloneFlags::CLONE_NEWIPC;
+    
+    if config.isolate_network {
+        info!("Network isolation enabled (CLONE_NEWNET)");
+        clone_flags |= CloneFlags::CLONE_NEWNET;
+    }
+    
+    if config.isolate_user {
+        info!("User namespace isolation enabled (CLONE_NEWUSER)");
+        clone_flags |= CloneFlags::CLONE_NEWUSER;
+    }
+    
+    unshare(clone_flags)
+        .map_err(|e| format!("unshare failed: {e}"))?;
 
     // CRITICAL: Make all mounts private to prevent mount/unmount events from propagating to the parent namespace. Modern systemd makes all mounts MS_SHARED by default,which would cause our container's unmounts to affect the host system.This is standard practice for all container runtimes (Docker, runc, etc.).
     info!("Making all mounts private to isolate from host...");
@@ -527,6 +579,9 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<SandboxResult, String> {
         None => (None, None),
     };
 
+    // Clone paths needed for cleanup before fork
+    let merged_for_cleanup = merged.to_path_buf();
+    
     // SAFETY: fork() is unsafe because it can cause undefined behavior in multi-threaded programs.
     // This is safe here because:
     // 1. This is the first fork (before the inner child fork), called early in the process
@@ -573,7 +628,7 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<SandboxResult, String> {
                 pty_master,
                 child_pid: child,
                 cleanup_paths: SandboxCleanupPaths {
-                    merged: merged.clone(),
+                    merged: merged_for_cleanup,
                     cgroup: cgroup_path,
                 },
             })

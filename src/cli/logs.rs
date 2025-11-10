@@ -16,7 +16,7 @@ pub async fn execute(args: LogsArgs) -> Result<(), IpcError> {
     let mut client = IpcClient::connect().await?;
 
     let request = DaemonRequest::LogsRequest {
-        container_id: args.container_id.clone(),
+        container_id: args.container_id,
         tail: args.tail,
     };
 

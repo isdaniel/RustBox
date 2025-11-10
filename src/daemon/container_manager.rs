@@ -118,7 +118,7 @@ impl ContainerRegistry {
     /// Add a new container
     pub fn insert(&mut self, container: Container) -> Result<(), ContainerError> {
         if self.containers.contains_key(&container.id) {
-            return Err(ContainerError::AlreadyExists(container.id.clone()));
+            return Err(ContainerError::AlreadyExists(container.id.to_string()));
         }
 
         // Check for name conflicts
@@ -357,6 +357,8 @@ impl ContainerManager {
                 stdout_log_path: Some(logs.stdout_path().to_string_lossy().to_string()),
                 stderr_log_path: Some(logs.stderr_path().to_string_lossy().to_string()),
                 tty: container_clone.config.tty,
+                isolate_user: container_clone.config.isolate_user,
+                isolate_network: container_clone.config.isolate_network,
             };
 
             info!("Starting container {} in background task", cid);
@@ -451,11 +453,11 @@ impl ContainerManager {
         let container_id = registry
             .resolve_id_or_name(&container_id_or_name)
             .ok_or_else(|| {
-                DaemonError::Container(ContainerError::NotFound(container_id_or_name.clone()))
+                DaemonError::Container(ContainerError::NotFound(container_id_or_name.to_string()))
             })?;
 
         let container = registry.get_mut(&container_id).ok_or_else(|| {
-            DaemonError::Container(ContainerError::NotFound(container_id.clone()))
+            DaemonError::Container(ContainerError::NotFound(container_id.to_string()))
         })?;
 
         if !container.state.can_stop() {
@@ -561,7 +563,7 @@ impl ContainerManager {
         let container_id = registry
             .resolve_id_or_name(&container_id_or_name)
             .ok_or_else(|| {
-                DaemonError::Container(ContainerError::NotFound(container_id_or_name.clone()))
+                DaemonError::Container(ContainerError::NotFound(container_id_or_name.to_string()))
             })?;
 
         let container =
@@ -593,11 +595,11 @@ impl ContainerManager {
         let container_id = registry
             .resolve_id_or_name(&container_id_or_name)
             .ok_or_else(|| {
-                DaemonError::Container(ContainerError::NotFound(container_id_or_name.clone()))
+                DaemonError::Container(ContainerError::NotFound(container_id_or_name.to_string()))
             })?;
 
         let container = registry.get(&container_id).ok_or_else(|| {
-            DaemonError::Container(ContainerError::NotFound(container_id.clone()))
+            DaemonError::Container(ContainerError::NotFound(container_id.to_string()))
         })?;
 
         // Check if container can be removed
@@ -609,7 +611,7 @@ impl ContainerManager {
 
         // Remove from registry
         let container = registry.remove(&container_id).ok_or_else(|| {
-            DaemonError::Container(ContainerError::NotFound(container_id.clone()))
+            DaemonError::Container(ContainerError::NotFound(container_id.to_string()))
         })?;
 
         // Cleanup overlay filesystem
@@ -670,11 +672,11 @@ impl ContainerManager {
         let container_id = registry
             .resolve_id_or_name(&container_id_or_name)
             .ok_or_else(|| {
-                DaemonError::Container(ContainerError::NotFound(container_id_or_name.clone()))
+                DaemonError::Container(ContainerError::NotFound(container_id_or_name.to_string()))
             })?;
 
         let container = registry.get(&container_id).ok_or_else(|| {
-            DaemonError::Container(ContainerError::NotFound(container_id.clone()))
+            DaemonError::Container(ContainerError::NotFound(container_id.to_string()))
         })?;
 
         // Check if container has TTY enabled
@@ -711,7 +713,7 @@ impl ContainerManager {
     /// Handle AttachRequest
     pub async fn handle_attach(
         &self,
-        container_id_or_name: String,
+        container_id_or_name: &str,
     ) -> Result<DaemonResponse, DaemonError> {
         info!("Attaching to container: {}", container_id_or_name);
 
@@ -720,13 +722,13 @@ impl ContainerManager {
 
         // Resolve container ID or name to actual container ID
         let container_id = registry
-            .resolve_id_or_name(&container_id_or_name)
+            .resolve_id_or_name(container_id_or_name)
             .ok_or_else(|| {
-                DaemonError::Container(ContainerError::NotFound(container_id_or_name.clone()))
+                DaemonError::Container(ContainerError::NotFound(container_id_or_name.to_string()))
             })?;
 
         let container = registry.get(&container_id).ok_or_else(|| {
-            DaemonError::Container(ContainerError::NotFound(container_id.clone()))
+            DaemonError::Container(ContainerError::NotFound(container_id.to_string()))
         })?;
 
         // Check if container is running
@@ -776,12 +778,12 @@ impl ContainerManager {
                 .resolve_id_or_name(&container_id_or_name)
                 .ok_or_else(|| {
                     tracing::error!(container_id_or_name = %container_id_or_name, "Container not found");
-                    DaemonError::Container(ContainerError::NotFound(container_id_or_name.clone()))
+                    DaemonError::Container(ContainerError::NotFound(container_id_or_name))
                 })?;
 
             let container = registry.get(&container_id).ok_or_else(|| {
                 tracing::error!(container_id = %container_id, "Container not found");
-                DaemonError::Container(ContainerError::NotFound(container_id.clone()))
+                DaemonError::Container(ContainerError::NotFound(container_id.to_string()))
             })?;
 
             if !container.state.is_running() {
@@ -1030,6 +1032,8 @@ mod tests {
             workdir: "/".to_string(),
             rootfs_path: "./rootfs".to_string(),
             tty: false,
+            isolate_user: false,
+            isolate_network: false,
         }
     }
 

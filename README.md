@@ -178,7 +178,7 @@ Created ──(start)──> Running ──(exit)──────> Exited
 - **Real-time Logging** with per-container stdout/stderr files
 - **Resource Isolation** using cgroups v2 (memory, CPU limits)
 - **Filesystem Isolation** using overlayfs with automatic cleanup
-- **Full Namespace Isolation** (PID, UTS, NET, USER, IPC)
+- **Configurable Namespace Isolation** (PID, UTS, IPC always enabled; NET, USER optional)
 - **Docker-like CLI** with familiar commands (run, ps, logs, inspect, rm, attach)
 - **Graceful Shutdown** with proper signal handling and resource cleanup
 - **Security** with proper privilege separation and input validation
@@ -267,6 +267,15 @@ sudo ./target/release/rustbox run --tty --memory 256M --cpu 0.5 /bin/bash 2>&1
 
 # Run a non-interactive container
 sudo ./target/release/rustbox run --memory 256M /usr/bin/python3 script.py
+
+# Run a container with user namespace isolation
+sudo ./target/release/rustbox run --tty --isolate-user /bin/bash
+
+# Run a container with network namespace isolation
+sudo ./target/release/rustbox run --tty --isolate-network /bin/bash
+
+# Run a container with both user and network isolation
+sudo ./target/release/rustbox run --tty --isolate-user --isolate-network /bin/bash
 ```
 
 **Note**: The `--tty` flag is required if you want to attach to the container later.
@@ -328,6 +337,8 @@ sudo ./target/release/rustbox remove --force <container-id>
 - `--workdir` - Working directory inside container (default: "/")
 - `--rootfs` - Path to rootfs directory (default: "./rootfs")
 - `--tty` - Allocate a pseudo-TTY for interactive use (required for attach)
+- `--isolate-user` - Enable user namespace isolation (CLONE_NEWUSER)
+- `--isolate-network` - Enable network namespace isolation (CLONE_NEWNET)
 
 ## Directory Structure
 
@@ -423,6 +434,8 @@ Example:
 
 - Daemon runs as root for privileged operations
 - Client commands run as user, connect via Unix socket
-- Containers run in isolated namespaces (PID, NET, UTS, IPC, USER)
+- Containers run in isolated namespaces:
+  - Always enabled: PID, UTS, IPC, Mount
+  - Optional (via flags): User (--isolate-user), Network (--isolate-network)
 - Input validation prevents directory traversal and injection attacks
 

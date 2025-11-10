@@ -25,6 +25,12 @@ pub struct ContainerConfig {
 
     /// Allocate a pseudo-TTY for the container
     pub tty: bool,
+
+    /// Isolate user namespace (CLONE_NEWUSER)
+    pub isolate_user: bool,
+
+    /// Isolate network namespace (CLONE_NEWNET)
+    pub isolate_network: bool,
 }
 
 impl ContainerConfig {
@@ -122,7 +128,10 @@ impl OverlayPaths {
     pub fn cleanup(&self) -> io::Result<()> {
         if self.merged.exists() {
             // Use the shared umount_detach function which performs lazy unmount,with MNT_DETACH flag and handles errors gracefully
-            umount_detach(&self.merged);
+            umount_detach(&self.merged.join("tmp"));
+            umount_detach(&self.merged.join("etc/resolv.conf"));
+            umount_detach(&self.merged.join("dev"));
+            umount_detach(&self.merged.join("proc"));
 
             // After unmounting, try to remove the directory
             remove_dir_all(&self.merged)?;
@@ -150,6 +159,8 @@ mod tests {
             workdir: "/".to_string(),
             rootfs_path: "./rootfs".to_string(),
             tty: false,
+            isolate_user: false,
+            isolate_network: false,
         };
         assert!(config.validate().is_ok());
     }
@@ -163,6 +174,8 @@ mod tests {
             workdir: "/".to_string(),
             rootfs_path: "./rootfs".to_string(),
             tty: false,
+            isolate_user: false,
+            isolate_network: false,
         };
         assert!(config.validate().is_err());
     }
@@ -176,6 +189,8 @@ mod tests {
             workdir: "/".to_string(),
             rootfs_path: "./rootfs".to_string(),
             tty: false,
+            isolate_user: false,
+            isolate_network: false,
         };
         assert!(config.validate().is_err());
     }
@@ -189,6 +204,8 @@ mod tests {
             workdir: "/".to_string(),
             rootfs_path: "./rootfs".to_string(),
             tty: false,
+            isolate_user: false,
+            isolate_network: false,
         };
         assert!(config.validate().is_err());
     }
@@ -202,6 +219,8 @@ mod tests {
             workdir: "relative/path".to_string(),
             rootfs_path: "./rootfs".to_string(),
             tty: false,
+            isolate_user: false,
+            isolate_network: false,
         };
         assert!(config.validate().is_err());
     }

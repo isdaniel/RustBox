@@ -57,6 +57,8 @@ fn test_container_lifecycle() {
         workdir: "/".to_string(),
         rootfs_path: "./rootfs".to_string(),
         tty: false,
+        isolate_user: false,
+        isolate_network: false,
     };
     
     let mut container = Container::new(Some("test".to_string()), config);
