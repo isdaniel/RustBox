@@ -104,8 +104,18 @@ pub struct OverlayPaths {
 
 impl OverlayPaths {
     /// Create paths for a new container
-    pub fn new(container_id: &str, rootfs_base: &str) -> Self {
+    pub fn new(container_id: &str, rootfs_base: &str) -> Self {   
         let rootfs_path = PathBuf::from(rootfs_base);
+        let rootfs_path = if rootfs_path.is_absolute() {
+            rootfs_path
+        } else {
+            // Convert relative path to absolute by resolving it against current directory
+            std::env::current_dir()
+                .ok()
+                .and_then(|cwd| cwd.join(&rootfs_path).canonicalize().ok())
+                .unwrap_or(rootfs_path)
+        };
+        
         Self {
             lower: rootfs_path.join("lowerdir"),
             upper: rootfs_path.join("upperdir"),

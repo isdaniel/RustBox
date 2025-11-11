@@ -102,13 +102,20 @@ fn ensure_dirs_exist(dirs: &[&Path]) -> Result<(), String> {
     Ok(())
 }
 
-pub fn mount_overlay(lower: &Path, upper: &Path, work: &Path, merged: &Path) -> Result<(), String> {
-    let opts = format!(
+pub fn mount_overlay(lower: &Path, upper: &Path, work: &Path, merged: &Path, use_userxattr: bool) -> Result<(), String> {
+    let mut opts = format!(
         "lowerdir={},upperdir={},workdir={}",
         lower.display(),
         upper.display(),
         work.display()
     );
+    
+    // Add userxattr option for user namespace compatibility
+    if use_userxattr {
+        opts.push_str(",userxattr");
+        info!("Mounting overlayfs in isolated namespace...");
+    }
+    
     info!(
         "Mounting overlay at {} with opts: {}",
         merged.display(),
@@ -135,14 +142,16 @@ pub fn umount_detach(path: &Path) {
 fn mount_proc_and_dev(merged: &Path) -> Result<(), String> {
     let proc_path = merged.join("proc");
     info!("Mounting /proc at: {}", proc_path.display());
-    mount(
+    if let Err(e) = mount(
         Some("proc"),
         &proc_path,
         Some("proc"),
         MsFlags::empty(),
         None::<&str>,
-    )
-    .map_err(|e| format!("mount /proc failed: {e}"))?;
+    ) {
+        error!("mount /proc failed: {e}");
+        return Err(format!("mount /proc failed: {e}"));
+    }
 
     let dev_path = merged.join("dev");
     info!("Bind-mounting /dev at: {}", dev_path.display());
@@ -469,6 +478,10 @@ fn run_in_namespace_and_wait(
 
     info!("Creating namespaces...");
     
+    let host_uid = unsafe { libc::getuid() };
+    let host_gid = unsafe { libc::getgid() };
+    info!("Current UID/GID before namespace: {} / {}", host_uid, host_gid);
+    
     // Build namespace flags based on configuration
     let mut clone_flags = CloneFlags::CLONE_NEWNS
         | CloneFlags::CLONE_NEWPID
@@ -487,6 +500,29 @@ fn run_in_namespace_and_wait(
     
     unshare(clone_flags)
         .map_err(|e| format!("unshare failed: {e}"))?;
+    
+    // Setup user namespace mappings IMMEDIATELY after unshare if user isolation is enabled
+    // This must be done before any other operations that might require capabilities
+    if config.isolate_user {
+        info!("Setting up user namespace mappings: UID 0 -> {}, GID 0 -> {}", host_uid, host_gid);
+        
+        // This is required for unprivileged user namespace setup
+        write("/proc/self/setgroups", "deny")
+            .map_err(|e| format!("Failed to write to /proc/self/setgroups: {e}"))?;
+        
+        // Map UID: container root (0) -> host UID
+        // Format: <start-in-ns> <start-in-parent-ns> <count>
+        let uid_map = format!("0 {} 1", host_uid);
+        write("/proc/self/uid_map", &uid_map)
+            .map_err(|e| format!("Failed to write to /proc/self/uid_map: {e}"))?;
+        
+        // Map GID: container root (0) -> host GID  
+        let gid_map = format!("0 {} 1", host_gid);
+        write("/proc/self/gid_map", &gid_map)
+            .map_err(|e| format!("Failed to write to /proc/self/gid_map: {e}"))?;
+        
+        info!("User namespace mappings configured successfully");
+    }
 
     // CRITICAL: Make all mounts private to prevent mount/unmount events from propagating to the parent namespace. Modern systemd makes all mounts MS_SHARED by default,which would cause our container's unmounts to affect the host system.This is standard practice for all container runtimes (Docker, runc, etc.).
     info!("Making all mounts private to isolate from host...");
@@ -506,8 +542,18 @@ fn run_in_namespace_and_wait(
     // 3. We don't hold any locks or use thread-local storage across the fork boundary
     match unsafe { fork() } {
         Ok(ForkResult::Child) => {
-            handle_inner_child(config, merged, pty_slave_fd)?;
-            unreachable!("handle_inner_child should not return");
+            match handle_inner_child(config, merged, pty_slave_fd) {
+                Ok(_) => {
+                    unreachable!("handle_inner_child should not return");
+                }
+                Err(e) => {
+                    if let Ok(mut f) = OpenOptions::new().create(true).append(true).open("/tmp/fork_debug.log") {
+                        let _ = writeln!(f, "[{}] handle_inner_child failed: {}", std::process::id(), e);
+                    }
+                    error!("(inner child) Fatal error: {}", e);
+                    process::exit(1);
+                }
+            }
         }
         Ok(ForkResult::Parent { child, .. }) => handle_inner_parent(child, merged, pty_slave_fd),
         Err(e) => Err(format!("inner fork failed: {e}")),
@@ -538,7 +584,9 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<SandboxResult, String> {
 
     ensure_dirs_exist(&[lower, upper, work, merged])?;
 
-    mount_overlay(&lower, &upper, &work, &merged)?;
+    // Mount overlay with userxattr option if user namespace isolation is enabled
+    // The userxattr option is required for overlayfs to work correctly with user namespaces
+    mount_overlay(&lower, &upper, &work, &merged, config.isolate_user)?;
 
     let cgroup_path = generate_cgroup_path();
     info!("Generated cgroup path: {}", cgroup_path.display());
