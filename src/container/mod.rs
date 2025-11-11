@@ -33,6 +33,8 @@
 //!     workdir: "/".to_string(),
 //!     rootfs_path: "./rootfs".to_string(),
 //!     tty: false,
+//!     isolate_user: false,
+//!     isolate_network: false,
 //! };
 //!
 //! let container = Container::new(Some("myapp".to_string()), config);
@@ -85,6 +87,8 @@ pub use state_machine::ContainerState;
 ///     workdir: "/root".to_string(),
 ///     rootfs_path: "./rootfs".to_string(),
 ///     tty: false,
+///     isolate_user: false,
+///     isolate_network: false,
 /// };
 ///
 /// let container = Container::new(Some("web-server".to_string()), config);
@@ -160,6 +164,8 @@ impl Container {
     ///     workdir: "/".to_string(),
     ///     rootfs_path: "./rootfs".to_string(),
     ///     tty: false,
+    ///     isolate_user: false,
+    ///     isolate_network: false,
     /// };
     ///
     /// // Create with explicit name
@@ -222,6 +228,8 @@ impl Container {
     ///     workdir: "/".to_string(),
     ///     rootfs_path: "./rootfs".to_string(),
     ///     tty: false,
+    ///     isolate_user: false,
+    ///     isolate_network: false,
     /// };
     ///
     /// let mut container = Container::new(None, config);
@@ -262,6 +270,8 @@ impl Container {
     ///     workdir: "/".to_string(),
     ///     rootfs_path: "./rootfs".to_string(),
     ///     tty: false,
+    ///     isolate_user: false,
+    ///     isolate_network: false,
     /// };
     ///
     /// let mut container = Container::new(None, config);

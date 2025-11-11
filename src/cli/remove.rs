@@ -29,8 +29,7 @@ pub async fn remove_command(args: RemoveArgs) -> Result<(), IpcError> {
             container_id,
             message,
         } => {
-            tracing::info!("{container_id}");
-            tracing::error!("{message}");
+            tracing::info!("message: {message} container_id:{container_id}");
             Ok(())
         }
         DaemonResponse::ErrorResponse { message, .. } => {

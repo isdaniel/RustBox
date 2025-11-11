@@ -116,13 +116,13 @@ impl OverlayPaths {
                 .unwrap_or(rootfs_path)
         };
         
+        let overlay_container_dir = PathBuf::from(OVERLAY_BASE_DIR).join(container_id);
+        
         Self {
             lower: rootfs_path.join("lowerdir"),
-            upper: rootfs_path.join("upperdir"),
-            work: rootfs_path.join("workdir"),
-            merged: PathBuf::from(OVERLAY_BASE_DIR)
-                .join(container_id)
-                .join("merged"),
+            upper: overlay_container_dir.join("upperdir"),
+            work: overlay_container_dir.join("workdir"),
+            merged: overlay_container_dir.join("merged"),
         }
     }
 
@@ -134,22 +134,70 @@ impl OverlayPaths {
         Ok(())
     }
 
-    /// Clean up all directories (except lower & upper, which is shared)
+    /// Copy the source upperdir content to the container-specific upper directory
+    /// 
+    /// This copies the contents from rootfs/upperdir to the container's isolated
+    /// upper directory under OVERLAY_BASE_DIR, preventing pollution of the original
+    /// repository upperdir.
+    pub fn copy_upperdir_content(&self, rootfs_base: &str) -> io::Result<()> {
+        let rootfs_path = PathBuf::from(rootfs_base);
+        let rootfs_path = if rootfs_path.is_absolute() {
+            rootfs_path
+        } else {
+            std::env::current_dir()
+                .ok()
+                .and_then(|cwd| cwd.join(&rootfs_path).canonicalize().ok())
+                .unwrap_or(rootfs_path)
+        };
+        
+        let source_upperdir = rootfs_path.join("upperdir");
+        
+        // Only copy if source upperdir exists
+        if source_upperdir.exists() {
+            Self::copy_dir_recursive(&source_upperdir, &self.upper)?;
+        }
+        
+        Ok(())
+    }
+
+    /// Recursively copy directory contents
+    fn copy_dir_recursive(src: &PathBuf, dst: &PathBuf) -> io::Result<()> {
+        if !dst.exists() {
+            create_dir_all(dst)?;
+        }
+
+        for entry in std::fs::read_dir(src)? {
+            let entry = entry?;
+            let src_path = entry.path();
+            let dst_path = dst.join(entry.file_name());
+
+            if src_path.is_dir() {
+                Self::copy_dir_recursive(&src_path, &dst_path)?;
+            } else {
+                std::fs::copy(&src_path, &dst_path)?;
+            }
+        }
+
+        Ok(())
+    }
+
+    /// Clean up all directories (merged, work, and upper)
+    /// 
+    /// Note: lower directory is not removed as it's the shared read-only base layer
     pub fn cleanup(&self) -> io::Result<()> {
         if self.merged.exists() {
-            // Use the shared umount_detach function which performs lazy unmount,with MNT_DETACH flag and handles errors gracefully
-            umount_detach(&self.merged.join("tmp"));
-            umount_detach(&self.merged.join("etc/resolv.conf"));
-            umount_detach(&self.merged.join("dev"));
-            umount_detach(&self.merged.join("proc"));
-
-            // After unmounting, try to remove the directory
+            umount_detach(&self.merged);
             remove_dir_all(&self.merged)?;
         }
 
         // Remove work directory
         if self.work.exists() {
             remove_dir_all(&self.work)?;
+        }
+
+        // Remove upper directory (container-specific writable layer)
+        if self.upper.exists() {
+            remove_dir_all(&self.upper)?;
         }
 
         Ok(())
@@ -238,9 +286,22 @@ mod tests {
     #[test]
     fn test_overlay_paths_new() {
         let paths = OverlayPaths::new("a3f7b2c4d5e6", "./rootfs");
-        assert_eq!(paths.lower, PathBuf::from("./rootfs/lowerdir"));
-        assert_eq!(paths.upper, PathBuf::from("./rootfs/upperdir"));
-        assert_eq!(paths.work, PathBuf::from("./rootfs/workdir"));
+        
+        // The lower path gets canonicalized if it's a relative path
+        let expected_lower = std::env::current_dir()
+            .ok()
+            .and_then(|cwd| cwd.join("./rootfs/lowerdir").canonicalize().ok())
+            .unwrap_or_else(|| PathBuf::from("./rootfs/lowerdir"));
+        
+        assert_eq!(paths.lower, expected_lower);
+        assert_eq!(
+            paths.upper,
+            PathBuf::from(OVERLAY_BASE_DIR).join("a3f7b2c4d5e6/upperdir")
+        );
+        assert_eq!(
+            paths.work,
+            PathBuf::from(OVERLAY_BASE_DIR).join("a3f7b2c4d5e6/workdir")
+        );
         assert_eq!(
             paths.merged,
             PathBuf::from(OVERLAY_BASE_DIR).join("a3f7b2c4d5e6/merged")

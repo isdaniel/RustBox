@@ -344,6 +344,16 @@ impl ContainerManager {
                 return;
             }
 
+            // Copy upperdir content from repository to container-specific location
+            if let Err(e) = container_clone.overlay_paths.copy_upperdir_content(&container_clone.config.rootfs_path) {
+                error!(
+                    "Failed to copy upperdir content for container {}: {}",
+                    cid, e
+                );
+                Self::mark_container_exited(registry_clone.clone(), &cid, 1).await;
+                return;
+            }
+
             // Build sandbox config using overlay paths from container
             let sandbox_config = SandboxConfig {
                 lower_dir: container_clone.overlay_paths.lower.clone(),

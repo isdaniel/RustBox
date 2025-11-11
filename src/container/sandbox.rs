@@ -444,7 +444,6 @@ fn handle_inner_child(
 /// Handle the inner parent process: wait for child and cleanup mounts
 fn handle_inner_parent(
     child: nix::unistd::Pid,
-    merged: &Path,
     pty_slave_fd: Option<RawFd>,
 ) -> Result<(), String> {
     // Close PTY slave in the inner parent - only the inner child needs it
@@ -458,11 +457,6 @@ fn handle_inner_parent(
     let _ = waitpid(child, None);
 
     info!("(inner parent) Cleaning up mounts inside namespace...");
-    // Unmount in reverse order of mounting to avoid dependency issues
-    umount_detach(&merged.join("tmp"));
-    umount_detach(&merged.join("etc/resolv.conf"));
-    umount_detach(&merged.join("dev"));
-    umount_detach(&merged.join("proc"));
 
     Ok(())
 }
@@ -555,7 +549,7 @@ fn run_in_namespace_and_wait(
                 }
             }
         }
-        Ok(ForkResult::Parent { child, .. }) => handle_inner_parent(child, merged, pty_slave_fd),
+        Ok(ForkResult::Parent { child, .. }) => handle_inner_parent(child, pty_slave_fd),
         Err(e) => Err(format!("inner fork failed: {e}")),
     }
 }

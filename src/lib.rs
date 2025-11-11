@@ -50,6 +50,8 @@
 //!     stdout_log_path: None,
 //!     stderr_log_path: None,
 //!     tty: false,
+//!     isolate_user: false,
+//!     isolate_network: false,
 //!     lower_dir: todo!(),
 //!     upper_dir: todo!(),
 //!     work_dir: todo!(),
