@@ -4,15 +4,15 @@
 
 ## Overview
 
-
-**RustBox** is a container runtime that isn't competing with (Docker or Kubernetes), we return to the core and build a simplest "Sandbox/isolated runtime environment" from the lowest level Linux kernel mechanisms (namespaces, cgroups, OverlayFS, etc.), provides Docker-like functionality using:
+**RustBox** is a container runtime that isn't competing with Docker or Kubernetes. We return to the core and build a simplest "Sandbox/isolated runtime environment" from the lowest level Linux kernel mechanisms (namespaces, cgroups, OverlayFS, etc.), provides Docker-like functionality using:
 
 - **Daemon Architecture** with Unix domain socket communication
 - **Multi-container Management** with persistent state
+- **Container Restart Support** with preserved filesystem state
 - **OverlayFS** for isolated container filesystems  
 - **Cgroups v2** for resource limits (memory, CPU)
 - **Linux namespaces** for complete process isolation
-- **Comprehensive CLI** with run, stop, list, inspect, remove, logs, and attach commands
+- **Comprehensive CLI** with run, start, stop, list, inspect, remove, logs, and attach commands
 
 This tool is designed for container orchestration, testing environments, and secure code execution.
 
@@ -158,8 +158,12 @@ RustBox employs a **double fork** pattern for each container to ensure proper is
 ```
 Created ──(start)──> Running ──(exit)──────> Exited
                        │
-                       └──(stop)──> Stopped ──(exit)──> Exited
+                       └──(stop)──> Stopped ──(start)──> Running
+                                      │
+                                      └──(timeout/cleanup)──> Exited
 ```
+
+> Containers in the `Stopped` state can be restarted with the `start` command, preserving their filesystem state. Containers that have naturally exited (state `Exited`) cannot be restarted.
 
 ### Persistent State Management
 
@@ -173,13 +177,14 @@ Created ──(start)──> Running ──(exit)──────> Exited
 - **Daemon Architecture** with background process and client-server communication
 - **Multi-container Management** supporting concurrent container execution
 - **Persistent State Management** with automatic recovery across daemon restarts
-- **Complete Container Lifecycle** (create, start, stop, remove, inspect)
+- **Complete Container Lifecycle** (create, start, stop, restart, remove, inspect)
+- **Container Restart Support** with preserved filesystem state across stop/start cycles
 - **Interactive Attach Support** with TTY allocation and real-time I/O streaming
 - **Real-time Logging** with per-container stdout/stderr files
 - **Resource Isolation** using cgroups v2 (memory, CPU limits)
 - **Filesystem Isolation** using overlayfs with automatic cleanup
 - **Configurable Namespace Isolation** (PID, UTS, IPC always enabled; NET, USER optional)
-- **Docker-like CLI** with familiar commands (run, ps, logs, inspect, rm, attach)
+- **Docker-like CLI** with familiar commands (run, start, stop, ps, logs, inspect, rm, attach)
 - **Graceful Shutdown** with proper signal handling and resource cleanup
 - **Security** with proper privilege separation and input validation
 
@@ -276,6 +281,12 @@ sudo ./target/release/rustbox run --tty --isolate-network /bin/bash
 
 # Run a container with both user and network isolation
 sudo ./target/release/rustbox run --tty --isolate-user --isolate-network /bin/bash
+
+# Stop a running container
+sudo ./target/release/rustbox stop <container-id>
+
+# Start a stopped container (preserves filesystem state)
+sudo ./target/release/rustbox start <container-id>
 ```
 
 **Note**: The `--tty` flag is required if you want to attach to the container later.
@@ -286,7 +297,7 @@ sudo ./target/release/rustbox run --tty --isolate-user --isolate-network /bin/ba
 # List running containers
 sudo ./target/release/rustbox list
 
-# List all containers (including stopped)
+# List all containers 
 sudo ./target/release/rustbox list -a
 # or
 sudo ./target/release/rustbox list --all
@@ -310,20 +321,17 @@ sudo ./target/release/rustbox attach f1a5f84880a1
 - Container must have been started with `--tty` flag
 - Container must be in `Running` state
 
-#### Stop, Remove, and Inspect Containers
+#### Inspect, Logs, and Remove Containers
 
 ```bash
-# Stop a running container
-sudo ./target/release/rustbox stop <container-id>
-
 # View container logs
 sudo ./target/release/rustbox logs <container-id>
 sudo ./target/release/rustbox logs --tail 50 <container-id>
 
-# Inspect container details
+# Inspect container details (shows current state, config, and timestamps)
 sudo ./target/release/rustbox inspect <container-id>
 
-# Remove a stopped container
+# Remove a stopped or exited container
 sudo ./target/release/rustbox remove <container-id>
 
 # Force remove a running container
@@ -394,6 +402,7 @@ src/
 │   └── logs.rs          # Log file management  
 ├── cli/                  # CLI command implementations
 │   ├── run.rs           # Create and start containers
+│   ├── start.rs         # Start stopped containers
 │   ├── stop.rs          # Stop containers
 │   ├── list.rs          # List containers
 │   ├── inspect.rs       # Container details
@@ -439,3 +448,59 @@ Example:
   - Optional (via flags): User (--isolate-user), Network (--isolate-network)
 - Input validation prevents directory traversal and injection attacks
 
+### Container State Persistence and Restart
+
+RustBox supports stopping and restarting containers while preserving their filesystem state, similar to Docker's behavior.
+
+#### Stop Behavior
+
+When a container is stopped using the `stop` command:
+
+1. **Process Management**: The container process receives SIGTERM for graceful shutdown (with configurable timeout)
+2. **Forced Termination**: If the process doesn't exit within the timeout, SIGKILL is sent
+3. **State Preservation**: The container's upperdir (writable overlay layer) is preserved on disk with all modifications
+4. **Resource Cleanup**: The overlay mount and cgroups are cleaned up, but the upperdir directory and its content remain intact
+5. **State Transition**: Container transitions from `Running` to `Stopped` state
+
+#### Start (Restart) Behavior
+
+When a stopped container is restarted using the `start` command:
+
+1. **State Recovery**: The existing upperdir is reused, preserving all filesystem changes made during previous runs
+2. **No Data Copy**: Unlike initial creation, the upperdir is NOT overwritten with the base template
+3. **New Process**: A fresh container process is spawned with access to the preserved filesystem state
+4. **Resource Recreation**: New overlay mount and cgroups are created with the same configuration
+5. **State Transition**: Container transitions from `Stopped` to `Running` state
+
+#### Restart Limitations
+
+- Only containers in `Stopped` state can be restarted
+- Containers that have naturally exited (state `Exited`) cannot be restarted
+- PTY master file descriptors are not persisted across daemon restarts (attach won't work after daemon restart)
+
+## Known Limitations
+
+### Container Lifecycle
+- Containers that have naturally exited (state `Exited`) cannot be restarted
+  - Only containers manually stopped (state `Stopped`) support restart functionality
+  - Use `run` to create a new container instance if restart is needed for exited containers
+
+### Networking
+- Network isolation (`--isolate-network`) provides complete isolation without NAT or bridge networking
+- No port forwarding or network connectivity for isolated containers
+- Consider using host network (default) for containers requiring network access
+
+### User Namespaces
+- User namespace isolation (`--isolate-user`) may require kernel configuration
+- Some distributions require enabling `kernel.unprivileged_userns_clone`
+- File permission mapping may behave differently with user namespace isolation
+
+### Daemon Persistence
+- PTY master file descriptors are not persisted across daemon restarts
+- Attach functionality is lost if daemon is restarted while containers are running
+- Container processes continue running but cannot be attached until stopped and restarted
+
+### Resource Management
+- Cgroups v2 required (kernel 5.x or higher)
+- Memory and CPU limits enforced but not strictly guaranteed under all conditions
+- Swap limits depend on kernel configuration

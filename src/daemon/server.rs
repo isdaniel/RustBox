@@ -190,6 +190,16 @@ async fn process_request(
             },
         },
 
+        DaemonRequest::StartRequest { container_id } => {
+            match container_manager.handle_start(container_id).await {
+                Ok(response) => response,
+                Err(e) => DaemonResponse::ErrorResponse {
+                    message: e.to_string(),
+                    code: 1,
+                },
+            }
+        }
+
         DaemonRequest::ListRequest { all } => match container_manager.handle_list(all).await {
             Ok(response) => response,
             Err(e) => DaemonResponse::ErrorResponse {
