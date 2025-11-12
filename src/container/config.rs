@@ -104,7 +104,7 @@ pub struct OverlayPaths {
 
 impl OverlayPaths {
     /// Create paths for a new container
-    pub fn new(container_id: &str, rootfs_base: &str) -> Self {   
+    pub fn new(container_id: &str, rootfs_base: &str) -> Self {
         let rootfs_path = PathBuf::from(rootfs_base);
         let rootfs_path = if rootfs_path.is_absolute() {
             rootfs_path
@@ -115,9 +115,9 @@ impl OverlayPaths {
                 .and_then(|cwd| cwd.join(&rootfs_path).canonicalize().ok())
                 .unwrap_or(rootfs_path)
         };
-        
+
         let overlay_container_dir = PathBuf::from(OVERLAY_BASE_DIR).join(container_id);
-        
+
         Self {
             lower: rootfs_path.join("lowerdir"),
             upper: overlay_container_dir.join("upperdir"),
@@ -135,7 +135,7 @@ impl OverlayPaths {
     }
 
     /// Copy the source upperdir content to the container-specific upper directory
-    /// 
+    ///
     /// This copies the contents from rootfs/upperdir to the container's isolated
     /// upper directory under OVERLAY_BASE_DIR, preventing pollution of the original
     /// repository upperdir.
@@ -149,14 +149,14 @@ impl OverlayPaths {
                 .and_then(|cwd| cwd.join(&rootfs_path).canonicalize().ok())
                 .unwrap_or(rootfs_path)
         };
-        
+
         let source_upperdir = rootfs_path.join("upperdir");
-        
+
         // Only copy if source upperdir exists
         if source_upperdir.exists() {
             Self::copy_dir_recursive(&source_upperdir, &self.upper)?;
         }
-        
+
         Ok(())
     }
 
@@ -182,7 +182,7 @@ impl OverlayPaths {
     }
 
     /// Clean up all directories (merged, work, and upper)
-    /// 
+    ///
     /// Note: lower directory is not removed as it's the shared read-only base layer
     pub fn cleanup(&self) -> io::Result<()> {
         if self.merged.exists() {
@@ -286,13 +286,13 @@ mod tests {
     #[test]
     fn test_overlay_paths_new() {
         let paths = OverlayPaths::new("a3f7b2c4d5e6", "./rootfs");
-        
+
         // The lower path gets canonicalized if it's a relative path
         let expected_lower = std::env::current_dir()
             .ok()
             .and_then(|cwd| cwd.join("./rootfs/lowerdir").canonicalize().ok())
             .unwrap_or_else(|| PathBuf::from("./rootfs/lowerdir"));
-        
+
         assert_eq!(paths.lower, expected_lower);
         assert_eq!(
             paths.upper,

@@ -71,8 +71,7 @@ impl ResourceTestEnvironment {
     }
     
     fn get_container_cgroup_path(&self, container_id: &str) -> PathBuf {
-        // RustBox creates cgroups with the pattern "rustbox_{pid}"
-        // We need to find the cgroup for this container
+        // RustBox creates cgroups with the pattern "rustbox_{pid}, We need to find the cgroup for this container
         PathBuf::from("/sys/fs/cgroup")
     }
     

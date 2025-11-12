@@ -345,7 +345,10 @@ impl ContainerManager {
             }
 
             // Copy upperdir content from repository to container-specific location
-            if let Err(e) = container_clone.overlay_paths.copy_upperdir_content(&container_clone.config.rootfs_path) {
+            if let Err(e) = container_clone
+                .overlay_paths
+                .copy_upperdir_content(&container_clone.config.rootfs_path)
+            {
                 error!(
                     "Failed to copy upperdir content for container {}: {}",
                     cid, e
@@ -387,11 +390,17 @@ impl ContainerManager {
                         result.child_pid.as_raw()
                     );
 
-                    // Update container with PTY master FD and PID immediately
+                    // Update container with PTY master FD, PID, and actual cgroup path immediately
                     {
                         let mut registry = registry_clone.write().await;
                         if let Some(container) = registry.get_mut(&cid) {
                             container.pty_master = result.pty_master;
+                            container.cgroup_path = result.cleanup_paths.cgroup.clone();
+                            info!(
+                                "Updated container {} cgroup path to: {}",
+                                cid,
+                                container.cgroup_path.display()
+                            );
                             let _ = container.mark_started(result.child_pid.as_raw());
                             let _ = save_metadata(container);
                             if let Some(fd) = result.pty_master {

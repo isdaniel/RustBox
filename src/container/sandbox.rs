@@ -72,8 +72,8 @@ fn parse_cpu_limit(cpu_limit_str: &str) -> Result<String, String> {
     Ok(format!("{quota} {period}"))
 }
 
-fn generate_cgroup_path() -> PathBuf {
-    Path::new(CGROUP_BASE).join(format!("rustbox_{}", process::id()))
+fn generate_cgroup_path(pid: u32) -> PathBuf {
+    Path::new(CGROUP_BASE).join(format!("rustbox_{}", pid))
 }
 
 fn setup_cgroup(config: &SandboxConfig, cgroup_path: &Path, pid: u32) -> Result<(), String> {
@@ -102,20 +102,26 @@ fn ensure_dirs_exist(dirs: &[&Path]) -> Result<(), String> {
     Ok(())
 }
 
-pub fn mount_overlay(lower: &Path, upper: &Path, work: &Path, merged: &Path, use_userxattr: bool) -> Result<(), String> {
+pub fn mount_overlay(
+    lower: &Path,
+    upper: &Path,
+    work: &Path,
+    merged: &Path,
+    use_userxattr: bool,
+) -> Result<(), String> {
     let mut opts = format!(
         "lowerdir={},upperdir={},workdir={}",
         lower.display(),
         upper.display(),
         work.display()
     );
-    
+
     // Add userxattr option for user namespace compatibility
     if use_userxattr {
         opts.push_str(",userxattr");
         info!("Mounting overlayfs in isolated namespace...");
     }
-    
+
     info!(
         "Mounting overlay at {} with opts: {}",
         merged.display(),
@@ -167,7 +173,10 @@ fn mount_proc_and_dev(merged: &Path) -> Result<(), String> {
     // Bind-mount /etc/resolv.conf for DNS resolution
     let resolv_path = merged.join("etc/resolv.conf");
     if std::path::Path::new("/etc/resolv.conf").exists() {
-        info!("Bind-mounting /etc/resolv.conf at: {}", resolv_path.display());
+        info!(
+            "Bind-mounting /etc/resolv.conf at: {}",
+            resolv_path.display()
+        );
         // Ensure the target file exists (even if empty) for bind mounting
         if !resolv_path.exists() {
             if let Err(e) = std::fs::File::create(&resolv_path) {
@@ -442,10 +451,7 @@ fn handle_inner_child(
 }
 
 /// Handle the inner parent process: wait for child and cleanup mounts
-fn handle_inner_parent(
-    child: nix::unistd::Pid,
-    pty_slave_fd: Option<RawFd>,
-) -> Result<(), String> {
+fn handle_inner_parent(child: nix::unistd::Pid, pty_slave_fd: Option<RawFd>) -> Result<(), String> {
     // Close PTY slave in the inner parent - only the inner child needs it
     // If we don't close it here, the namespaced parent keeps it open,
     // which can cause EIO when trying to read from the PTY master
@@ -471,50 +477,55 @@ fn run_in_namespace_and_wait(
     }
 
     info!("Creating namespaces...");
-    
+
     let host_uid = unsafe { libc::getuid() };
     let host_gid = unsafe { libc::getgid() };
-    info!("Current UID/GID before namespace: {} / {}", host_uid, host_gid);
-    
+    info!(
+        "Current UID/GID before namespace: {} / {}",
+        host_uid, host_gid
+    );
+
     // Build namespace flags based on configuration
     let mut clone_flags = CloneFlags::CLONE_NEWNS
         | CloneFlags::CLONE_NEWPID
         | CloneFlags::CLONE_NEWUTS
         | CloneFlags::CLONE_NEWIPC;
-    
+
     if config.isolate_network {
         info!("Network isolation enabled (CLONE_NEWNET)");
         clone_flags |= CloneFlags::CLONE_NEWNET;
     }
-    
+
     if config.isolate_user {
         info!("User namespace isolation enabled (CLONE_NEWUSER)");
         clone_flags |= CloneFlags::CLONE_NEWUSER;
     }
-    
-    unshare(clone_flags)
-        .map_err(|e| format!("unshare failed: {e}"))?;
-    
+
+    unshare(clone_flags).map_err(|e| format!("unshare failed: {e}"))?;
+
     // Setup user namespace mappings IMMEDIATELY after unshare if user isolation is enabled
     // This must be done before any other operations that might require capabilities
     if config.isolate_user {
-        info!("Setting up user namespace mappings: UID 0 -> {}, GID 0 -> {}", host_uid, host_gid);
-        
+        info!(
+            "Setting up user namespace mappings: UID 0 -> {}, GID 0 -> {}",
+            host_uid, host_gid
+        );
+
         // This is required for unprivileged user namespace setup
         write("/proc/self/setgroups", "deny")
             .map_err(|e| format!("Failed to write to /proc/self/setgroups: {e}"))?;
-        
+
         // Map UID: container root (0) -> host UID
         // Format: <start-in-ns> <start-in-parent-ns> <count>
         let uid_map = format!("0 {} 1", host_uid);
         write("/proc/self/uid_map", &uid_map)
             .map_err(|e| format!("Failed to write to /proc/self/uid_map: {e}"))?;
-        
-        // Map GID: container root (0) -> host GID  
+
+        // Map GID: container root (0) -> host GID
         let gid_map = format!("0 {} 1", host_gid);
         write("/proc/self/gid_map", &gid_map)
             .map_err(|e| format!("Failed to write to /proc/self/gid_map: {e}"))?;
-        
+
         info!("User namespace mappings configured successfully");
     }
 
@@ -535,20 +546,15 @@ fn run_in_namespace_and_wait(
     // 2. The child process immediately calls exec (execve) which replaces the process image
     // 3. We don't hold any locks or use thread-local storage across the fork boundary
     match unsafe { fork() } {
-        Ok(ForkResult::Child) => {
-            match handle_inner_child(config, merged, pty_slave_fd) {
-                Ok(_) => {
-                    unreachable!("handle_inner_child should not return");
-                }
-                Err(e) => {
-                    if let Ok(mut f) = OpenOptions::new().create(true).append(true).open("/tmp/fork_debug.log") {
-                        let _ = writeln!(f, "[{}] handle_inner_child failed: {}", std::process::id(), e);
-                    }
-                    error!("(inner child) Fatal error: {}", e);
-                    process::exit(1);
-                }
+        Ok(ForkResult::Child) => match handle_inner_child(config, merged, pty_slave_fd) {
+            Ok(_) => {
+                unreachable!("handle_inner_child should not return");
             }
-        }
+            Err(e) => {
+                error!("(inner child) Fatal error: {}", e);
+                process::exit(1);
+            }
+        },
         Ok(ForkResult::Parent { child, .. }) => handle_inner_parent(child, pty_slave_fd),
         Err(e) => Err(format!("inner fork failed: {e}")),
     }
@@ -581,9 +587,6 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<SandboxResult, String> {
     // Mount overlay with userxattr option if user namespace isolation is enabled
     // The userxattr option is required for overlayfs to work correctly with user namespaces
     mount_overlay(&lower, &upper, &work, &merged, config.isolate_user)?;
-
-    let cgroup_path = generate_cgroup_path();
-    info!("Generated cgroup path: {}", cgroup_path.display());
 
     // Create PTY if TTY is requested
     let pty_result = if config.tty {
@@ -623,7 +626,7 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<SandboxResult, String> {
 
     // Clone paths needed for cleanup before fork
     let merged_for_cleanup = merged.to_path_buf();
-    
+
     // SAFETY: fork() is unsafe because it can cause undefined behavior in multi-threaded programs.
     // This is safe here because:
     // 1. This is the first fork (before the inner child fork), called early in the process
@@ -636,12 +639,19 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<SandboxResult, String> {
             if let Some(master_fd) = pty_master {
                 nix::unistd::close(master_fd).ok();
             }
+            let pid = process::id();
+            // Generate cgroup path in the child process using the child's PID
+            let cgroup_path = generate_cgroup_path(pid);
+            info!(
+                "(namespaced parent) Generated cgroup path: {}",
+                cgroup_path.display()
+            );
 
             info!(
                 "(namespaced parent) Setting up cgroups at: {}",
                 cgroup_path.display()
             );
-            if let Err(e) = setup_cgroup(&config, &cgroup_path, process::id()) {
+            if let Err(e) = setup_cgroup(&config, &cgroup_path, pid) {
                 error!("(namespaced parent) Failed to setup cgroup: {}", e);
                 process::exit(1);
             }
@@ -662,6 +672,14 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<SandboxResult, String> {
             info!(
                 "(outer parent) Forked namespaced parent with pid {}, returning immediately",
                 child
+            );
+
+            // Generate the cgroup path based on the child PID for cleanup
+            // This matches what the child process created
+            let cgroup_path = Path::new(CGROUP_BASE).join(format!("rustbox_{}", child.as_raw()));
+            info!(
+                "(outer parent) Cgroup path for cleanup: {}",
+                cgroup_path.display()
             );
 
             // Return immediately with PTY master FD and child PID
