@@ -18,6 +18,8 @@ enum Commands {
     Run(RunArgs),
     /// Stop a running container
     Stop(StopArgs),
+    /// Start a stopped container
+    Start(StartArgs),
     /// List containers
     #[command(alias = "ps")]
     List(ListArgs),
@@ -58,6 +60,7 @@ async fn main() {
     let result = match cli.command {
         Commands::Run(args) => run_command(args).await,
         Commands::Stop(args) => stop_command(args).await,
+        Commands::Start(args) => start_command(args).await,
         Commands::List(args) => list_command(args).await,
         Commands::Inspect(args) => inspect_command(args).await,
         Commands::Remove(args) => remove_command(args).await,

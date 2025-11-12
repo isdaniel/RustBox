@@ -27,6 +27,9 @@ pub enum DaemonRequest {
         #[serde(default = "default_timeout")]
         timeout: u64,
     },
+    StartRequest {
+        container_id: String,
+    },
     ListRequest {
         #[serde(default)]
         all: bool,
@@ -73,6 +76,10 @@ pub enum DaemonResponse {
         state: String,
     },
     StopResponse {
+        container_id: String,
+        state: String,
+    },
+    StartResponse {
         container_id: String,
         state: String,
     },

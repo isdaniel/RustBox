@@ -455,6 +455,162 @@ impl ContainerManager {
         })
     }
 
+    /// Handle StartRequest
+    pub async fn handle_start(
+        &self,
+        container_id_or_name: String,
+    ) -> Result<DaemonResponse, DaemonError> {
+        info!("Starting container: {}", container_id_or_name);
+
+        // Resolve container ID or name to actual container ID
+        let container_id = {
+            let registry = self.registry.read().await;
+            registry
+                .resolve_id_or_name(&container_id_or_name)
+                .ok_or_else(|| {
+                    DaemonError::Container(ContainerError::NotFound(
+                        container_id_or_name.to_string(),
+                    ))
+                })?
+        };
+
+        let container = {
+            let mut registry = self.registry.write().await;
+
+            let container = registry.get_mut(&container_id).ok_or_else(|| {
+                DaemonError::Container(ContainerError::NotFound(container_id.to_string()))
+            })?;
+
+            if !container.state.can_start() {
+                return Err(DaemonError::InvalidRequest(format!(
+                    "Container {} cannot be started from state: {}",
+                    container_id, container.state
+                )));
+            }
+
+            let _ = container.mark_started(1); // Temporary PID, will be updated
+            save_metadata(container).map_err(DaemonError::Storage)?;
+
+            container.clone()
+        };
+
+        // Start the container process in background
+        let registry_clone = self.registry.clone();
+        let cid = container_id.clone();
+
+        tokio::spawn(async move {
+            // Get log file paths
+            let logs = ContainerLogs::new(cid.clone());
+
+            // Ensure overlay directories are created before mounting
+            // For restarted containers, the upperdir already exists with previous state
+            // We only need to recreate merged/work directories if they were cleaned up
+            if let Err(e) = container.overlay_paths.create_dirs() {
+                error!(
+                    "Failed to create overlay directories for container {}: {}",
+                    cid, e
+                );
+                Self::mark_container_exited(registry_clone.clone(), &cid, 1).await;
+                return;
+            }
+
+            let sandbox_config = SandboxConfig {
+                lower_dir: container.overlay_paths.lower.clone(),
+                upper_dir: container.overlay_paths.upper.clone(),
+                work_dir: container.overlay_paths.work.clone(),
+                merged_dir: container.overlay_paths.merged.clone(),
+                memory_limit: container.config.memory_limit.clone(),
+                command: container.config.command.clone(),
+                workdir: container.config.workdir.clone(),
+                cpu_limit: container.config.cpu_limit.clone(),
+                stdout_log_path: Some(logs.stdout_path().to_string_lossy().to_string()),
+                stderr_log_path: Some(logs.stderr_path().to_string_lossy().to_string()),
+                tty: container.config.tty,
+                isolate_user: container.config.isolate_user,
+                isolate_network: container.config.isolate_network,
+            };
+
+            info!("Starting container {} in background task", cid);
+
+            // Run sandbox in blocking task - now returns immediately with PTY FD and child PID
+            let sandbox_result =
+                tokio::task::spawn_blocking(move || run_sandbox(sandbox_config)).await;
+
+            match sandbox_result {
+                Ok(Ok(result)) => {
+                    info!(
+                        "Container {} started with PID {}, PTY master FD: {:?}, child_pid: {}",
+                        cid,
+                        result.child_pid,
+                        result.pty_master,
+                        result.child_pid.as_raw()
+                    );
+
+                    // Update container with PTY master FD, PID, and actual cgroup path immediately
+                    {
+                        let mut registry = registry_clone.write().await;
+                        if let Some(container) = registry.get_mut(&cid) {
+                            container.pty_master = result.pty_master;
+                            container.cgroup_path = result.cleanup_paths.cgroup.clone();
+                            info!(
+                                "Updated container {} cgroup path to: {}",
+                                cid,
+                                container.cgroup_path.display()
+                            );
+                            let _ = container.mark_started(result.child_pid.as_raw());
+                            let _ = save_metadata(container);
+                            if let Some(fd) = result.pty_master {
+                                match unsafe { BorrowedFd::borrow_raw(fd) }.try_clone_to_owned() {
+                                    Ok(_) => {
+                                        info!(
+                                            "PTY master FD {} is valid immediately after storage",
+                                            fd
+                                        );
+                                    }
+                                    Err(e) => {
+                                        error!("PTY master FD {} is INVALID immediately after storage: {}", fd, e);
+                                    }
+                                }
+                            }
+                        }
+                    } 
+
+                    let registry_clone2 = registry_clone.clone();
+                    let cid2 = cid.clone();
+                    tokio::spawn(async move {
+                        // Wait for container to exit in a blocking task
+                        tokio::task::spawn_blocking(move || {
+                            let _ = wait_and_cleanup(result);
+                        })
+                        .await
+                        .ok();
+
+                        info!("Container {} has exited", cid2);
+
+                        // Container has exited, update state
+                        // Note: wait_and_cleanup doesn't currently return exit code
+                        let exit_code = 0;
+                        info!("Container {} exited with code: {}", cid2, exit_code);
+                        Self::mark_container_exited(registry_clone2, &cid2, exit_code).await;
+                    });
+                }
+                Ok(Err(e)) => {
+                    error!("Container {} failed to start: {}", cid, e);
+                    Self::mark_container_exited(registry_clone.clone(), &cid, 1).await;
+                }
+                Err(e) => {
+                    error!("Container {} start task panicked: {}", cid, e);
+                    Self::mark_container_exited(registry_clone.clone(), &cid, 1).await;
+                }
+            }
+        });
+
+        Ok(DaemonResponse::StartResponse {
+            container_id,
+            state: "Running".to_string(),
+        })
+    }
+
     /// Handle StopRequest
     pub async fn handle_stop(
         &self,
