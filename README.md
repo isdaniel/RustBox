@@ -26,6 +26,7 @@ This tool is designed for container orchestration, testing environments, and sec
 
 ### Daemon-Client Model
 
+
 ```
 ┌──────────────────────────────────────────────────────────────────────────────┐
 │                                RustBox Architecture                          │
@@ -70,13 +71,66 @@ This tool is designed for container orchestration, testing environments, and sec
      │                  ┌──────────────────────────────────────────────┐
      │                  │              Sandbox Components               │
      │                  │  overlayfs + cgroups + namespaces             │
+     │                  └──────────────────────────────────────────────┘
+     │                         │
+     │                         │
+     │  (When attaching)       │
+     │  ───────────────────────────────────────────────────────────────────────────
+    ┌─────────────────────────────────────────────────────────────────────────────┐
+    │                            Container Attach Flow                            │
+    └─────────────────────────────────────────────────────────────────────────────┘
+
+    Client (e.g. docker attach, CLI, web terminal)
+    │
+    │  1. Send/receive stdin/stdout over Unix socket
+    ▼
+    ┌───────────────────────────────────────────────────────────┐
+    │ Daemon Process                                            │
+    │ ───────────────────────────────────────────────────────── │
+    │  • Manages container lifecycle                            │
+    │  • Holds PTY master side                                  │
+    │  • Forwards data between client and container             │
+    │                                                           │
+    │  ┌──────────────────────────────────────────────────────┐ │
+    │  │ Unix Socket (Client ↔ Daemon)                        │ │
+    │  │  - AttachStdin  (client → daemon)                    │ │
+    │  │  - AttachStdout (daemon → client)                    │ │
+    │  └──────────────────────────────────────────────────────┘ │
+    │                              │
+    │                              │ (I/O forwarding loop) 
+    │                              ▼
+    │  ┌──────────────────────────────────────────────────────┐ │
+    │  │ PTY Master                                           │ │
+    │  │  - Pseudo terminal device endpoint controlled by     │ │
+    │  │    the daemon                                        │ │
+    │  │  - Reads container output                            │ │
+    │  │  - Writes client input                               │ │
+    │  └──────────────────────────────────────────────────────┘ │
+    │                              │
+    │                              │ (kernel-level link)
+    │                              ▼
+    │  ┌──────────────────────────────────────────────────────┐ │
+    │  │ PTY Slave                                            │ │
+    │  │  - Exposed inside the container as /dev/tty or stdin │ │
+    │  │  - Attached to the container’s process (e.g. /bin/bash)││
+    │  │  - Container writes stdout/stderr → goes to Master   │ │
+    │  │  - Container reads stdin ← comes from Master         │ │
+    │  └──────────────────────────────────────────────────────┘ │
+    └───────────────────────────────────────────────────────────┘
+    │
+    ▼
+    Container Process (e.g. /bin/bash, sh)
+    • Reads from stdin (/dev/tty)
+    • Writes to stdout/stderr (/dev/tty)
+
+    ───────────────────────────────────────────────────────────────
+    Summary:
     - PTY Master: controlled by the daemon, mediates all I/O
     - PTY Slave : presented to the container process as its terminal
     - Unix Socket: transports attach stream between client ↔ daemon
     ───────────────────────────────────────────────────────────────
 
 ```
-
 ### Container Isolation
 
 RustBox employs a **double fork** pattern for each container to ensure proper isolation:
