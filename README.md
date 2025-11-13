@@ -155,12 +155,18 @@ RustBox employs a **double fork** pattern for each container to ensure proper is
 
 ### Container Lifecycle States
 
-```
-Created ──(start)──> Running ──(exit)──────> Exited
-                       │
-                       └──(stop)──> Stopped ──(start)──> Running
-                                      │
-                                      └──(timeout/cleanup)──> Exited
+```mermaid
+graph LR
+    A[Created] -->|start| B[Running]
+    B -->|exit| D[Exited]
+    B -->|stop| C[Stopped]
+    C -->|start/restart| B
+    C -->|timeout/cleanup| D
+
+    style A fill:#e6f3ff,stroke:#333,color:black,stroke-width:2px
+    style B fill:#d4edda,stroke:#333,color:black,stroke-width:2px
+    style C fill:#fff3cd,stroke:#333,color:black,stroke-width:2px
+    style D fill:#f8d7da,stroke:#333,color:black,stroke-width:2px
 ```
 
 > Containers in the `Stopped` state can be restarted with the `start` command, preserving their filesystem state. Containers that have naturally exited (state `Exited`) cannot be restarted.
