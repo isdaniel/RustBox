@@ -16,6 +16,12 @@
 
 This tool is designed for container orchestration, testing environments, and secure code execution.
 
+## Requirements
+
+- Linux kernel 5.x or higher (with overlayfs and cgroups v2 support)
+- Rust (1.70+ recommended) 
+- Root privileges (for daemon operations, mounting, and namespace creation)
+
 ## Architecture
 
 ### Daemon-Client Model
@@ -64,60 +70,6 @@ This tool is designed for container orchestration, testing environments, and sec
      │                  ┌──────────────────────────────────────────────┐
      │                  │              Sandbox Components               │
      │                  │  overlayfs + cgroups + namespaces             │
-     │                  └──────────────────────────────────────────────┘
-     │                         │
-     │                         │
-     │  (When attaching)       │
-     │  ───────────────────────────────────────────────────────────────────────────
-    ┌─────────────────────────────────────────────────────────────────────────────┐
-    │                            Container Attach Flow                            │
-    └─────────────────────────────────────────────────────────────────────────────┘
-
-    Client (e.g. docker attach, CLI, web terminal)
-    │
-    │  1. Send/receive stdin/stdout over Unix socket
-    ▼
-    ┌───────────────────────────────────────────────────────────┐
-    │ Daemon Process                                            │
-    │ ───────────────────────────────────────────────────────── │
-    │  • Manages container lifecycle                            │
-    │  • Holds PTY master side                                  │
-    │  • Forwards data between client and container             │
-    │                                                           │
-    │  ┌──────────────────────────────────────────────────────┐ │
-    │  │ Unix Socket (Client ↔ Daemon)                        │ │
-    │  │  - AttachStdin  (client → daemon)                    │ │
-    │  │  - AttachStdout (daemon → client)                    │ │
-    │  └──────────────────────────────────────────────────────┘ │
-    │                              │
-    │                              │ (I/O forwarding loop) 
-    │                              ▼
-    │  ┌──────────────────────────────────────────────────────┐ │
-    │  │ PTY Master                                           │ │
-    │  │  - Pseudo terminal device endpoint controlled by     │ │
-    │  │    the daemon                                        │ │
-    │  │  - Reads container output                            │ │
-    │  │  - Writes client input                               │ │
-    │  └──────────────────────────────────────────────────────┘ │
-    │                              │
-    │                              │ (kernel-level link)
-    │                              ▼
-    │  ┌──────────────────────────────────────────────────────┐ │
-    │  │ PTY Slave                                            │ │
-    │  │  - Exposed inside the container as /dev/tty or stdin │ │
-    │  │  - Attached to the container’s process (e.g. /bin/bash)││
-    │  │  - Container writes stdout/stderr → goes to Master   │ │
-    │  │  - Container reads stdin ← comes from Master         │ │
-    │  └──────────────────────────────────────────────────────┘ │
-    └───────────────────────────────────────────────────────────┘
-    │
-    ▼
-    Container Process (e.g. /bin/bash, sh)
-    • Reads from stdin (/dev/tty)
-    • Writes to stdout/stderr (/dev/tty)
-
-    ───────────────────────────────────────────────────────────────
-    Summary:
     - PTY Master: controlled by the daemon, mediates all I/O
     - PTY Slave : presented to the container process as its terminal
     - Unix Socket: transports attach stream between client ↔ daemon
@@ -178,28 +130,6 @@ graph LR
 - **Overlay filesystems**: `/var/lib/rustbox/overlay/<container-id>/`
 - **State recovery**: Daemon recovers container state on restart
 
-## Features
-
-- **Daemon Architecture** with background process and client-server communication
-- **Multi-container Management** supporting concurrent container execution
-- **Persistent State Management** with automatic recovery across daemon restarts
-- **Complete Container Lifecycle** (create, start, stop, restart, remove, inspect)
-- **Container Restart Support** with preserved filesystem state across stop/start cycles
-- **Interactive Attach Support** with TTY allocation and real-time I/O streaming
-- **Real-time Logging** with per-container stdout/stderr files
-- **Resource Isolation** using cgroups v2 (memory, CPU limits)
-- **Filesystem Isolation** using overlayfs with automatic cleanup
-- **Configurable Namespace Isolation** (PID, UTS, IPC always enabled; NET, USER optional)
-- **Docker-like CLI** with familiar commands (run, start, stop, ps, logs, inspect, rm, attach)
-- **Graceful Shutdown** with proper signal handling and resource cleanup
-- **Security** with proper privilege separation and input validation
-
-## Requirements
-
-- Linux kernel 5.x or higher (with overlayfs and cgroups v2 support)
-- Rust (1.70+ recommended) 
-- Root privileges (for daemon operations, mounting, and namespace creation)
-
 ## Installation
 
 ### Build from Source
@@ -221,9 +151,7 @@ cd RustBox
 cargo build --release
 ```
 
-### Working with Git Submodules
-
-This project uses git submodules to manage the container rootfs. The `rootfs/lowerdir` directory is a submodule pointing to a separate repository.
+> This project uses git submodules to manage the container rootfs. The `rootfs/lowerdir` directory is a submodule pointing to a separate repository.
 
 #### Initial Setup
 
@@ -232,16 +160,6 @@ If you've already cloned the repository without submodules:
 ```bash
 # Initialize and clone the submodule
 git submodule update --init --recursive
-```
-
-#### Problem: Submodule directory is empty & Permission denied when cloning submodule
-
-Make sure you have SSH access to the submodule repository or use HTTPS:
-```bash
-# Convert submodule URL from SSH to HTTPS
-git config submodule.rootfs/lowerdir.url https://github.com/isdaniel/lowerdir.git
-git submodule sync
-git submodule update --init
 ```
 
 ### Binaries
@@ -295,7 +213,7 @@ sudo ./target/release/rustbox stop <container-id>
 sudo ./target/release/rustbox start <container-id>
 ```
 
-**Note**: The `--tty` flag is required if you want to attach to the container later.
+> The `--tty` flag is required if you want to attach to the container later.
 
 #### List Containers
 
@@ -432,57 +350,6 @@ Example:
 ```
 0x0000001E  {"type":"ListRequest","all":true}
 ```
-
-### Container ID Format
-
-- 12-character hexadecimal identifiers (e.g., `a1b2c3d4e5f6`)
-- Auto-generated names follow `adjective-noun` pattern (e.g., `happy-elephant`)
-- CLI commands accept either ID or name
-
-### Resource Limits
-
-- **Memory**: Supports units like `100M`, `1G`, `512000` (bytes)
-- **CPU**: Fraction of one core, e.g., `0.5` for 50% CPU limit
-- Enforced via cgroups v2 at `/sys/fs/cgroup/rustbox/<container-id>/`
-
-### Security Model
-
-- Daemon runs as root for privileged operations
-- Client commands run as user, connect via Unix socket
-- Containers run in isolated namespaces:
-  - Always enabled: PID, UTS, IPC, Mount
-  - Optional (via flags): User (--isolate-user), Network (--isolate-network)
-- Input validation prevents directory traversal and injection attacks
-
-### Container State Persistence and Restart
-
-RustBox supports stopping and restarting containers while preserving their filesystem state, similar to Docker's behavior.
-
-#### Stop Behavior
-
-When a container is stopped using the `stop` command:
-
-1. **Process Management**: The container process receives SIGTERM for graceful shutdown (with configurable timeout)
-2. **Forced Termination**: If the process doesn't exit within the timeout, SIGKILL is sent
-3. **State Preservation**: The container's upperdir (writable overlay layer) is preserved on disk with all modifications
-4. **Resource Cleanup**: The overlay mount and cgroups are cleaned up, but the upperdir directory and its content remain intact
-5. **State Transition**: Container transitions from `Running` to `Stopped` state
-
-#### Start (Restart) Behavior
-
-When a stopped container is restarted using the `start` command:
-
-1. **State Recovery**: The existing upperdir is reused, preserving all filesystem changes made during previous runs
-2. **No Data Copy**: Unlike initial creation, the upperdir is NOT overwritten with the base template
-3. **New Process**: A fresh container process is spawned with access to the preserved filesystem state
-4. **Resource Recreation**: New overlay mount and cgroups are created with the same configuration
-5. **State Transition**: Container transitions from `Stopped` to `Running` state
-
-#### Restart Limitations
-
-- Only containers in `Stopped` state can be restarted
-- Containers that have naturally exited (state `Exited`) cannot be restarted
-- PTY master file descriptors are not persisted across daemon restarts (attach won't work after daemon restart)
 
 ## Known Limitations
 
