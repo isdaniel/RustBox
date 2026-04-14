@@ -12,6 +12,11 @@ fn test_container_metadata_serialization() {
         tty: false,
         isolate_user: false,
         isolate_network: false,
+        env: vec![],
+        pids_limit: None,
+        cpu_weight: None,
+        memory_swap_limit: None,
+        port_mappings: vec![],
     };
     
     let container = Container::new(Some("test_container".to_string()), config);
@@ -44,6 +49,11 @@ fn test_container_metadata_round_trip() {
         tty: false,
         isolate_user: false,
         isolate_network: false,
+        env: vec![],
+        pids_limit: None,
+        cpu_weight: None,
+        memory_swap_limit: None,
+        port_mappings: vec![],
     };
     
     let mut container = Container::new(None, config);
@@ -79,6 +89,11 @@ fn test_container_metadata_with_different_states() {
         tty: false,
         isolate_user: false,
         isolate_network: false,
+        env: vec![],
+        pids_limit: None,
+        cpu_weight: None,
+        memory_swap_limit: None,
+        port_mappings: vec![],
     };
     
     // Test Created state
@@ -114,6 +129,11 @@ fn test_container_metadata_stopped_state_persistence() {
         tty: false,
         isolate_user: false,
         isolate_network: false,
+        env: vec![],
+        pids_limit: None,
+        cpu_weight: None,
+        memory_swap_limit: None,
+        port_mappings: vec![],
     };
     
     // Create container, start it, then stop it
@@ -153,6 +173,11 @@ fn test_container_metadata_start_stop_restart_cycle() {
         tty: false,
         isolate_user: false,
         isolate_network: false,
+        env: vec![],
+        pids_limit: None,
+        cpu_weight: None,
+        memory_swap_limit: None,
+        port_mappings: vec![],
     };
     
     use crate::container::ContainerState;
@@ -202,6 +227,11 @@ fn test_exited_container_cannot_restart_after_persistence() {
         tty: false,
         isolate_user: false,
         isolate_network: false,
+        env: vec![],
+        pids_limit: None,
+        cpu_weight: None,
+        memory_swap_limit: None,
+        port_mappings: vec![],
     };
     
     use crate::container::ContainerState;
@@ -236,6 +266,11 @@ fn test_container_metadata_preserves_timestamps_across_state_changes() {
         tty: false,
         isolate_user: false,
         isolate_network: false,
+        env: vec![],
+        pids_limit: None,
+        cpu_weight: None,
+        memory_swap_limit: None,
+        port_mappings: vec![],
     };
     
     let mut container = Container::new(Some("timestamp_test".to_string()), config);

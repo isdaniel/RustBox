@@ -29,8 +29,8 @@ pub async fn stop_command(args: StopArgs) -> Result<(), IpcError> {
             container_id,
             state,
         } => {
-            tracing::info!("{container_id}");
-            tracing::error!("Container stopped with state: {state}");
+            println!("{container_id}");
+            println!("Container stopped with state: {state}");
             Ok(())
         }
         DaemonResponse::ErrorResponse { message, .. } => {

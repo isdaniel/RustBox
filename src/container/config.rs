@@ -31,6 +31,26 @@ pub struct ContainerConfig {
 
     /// Isolate network namespace (CLONE_NEWNET)
     pub isolate_network: bool,
+
+    /// Environment variables to set inside the container (format: KEY=VALUE)
+    #[serde(default)]
+    pub env: Vec<String>,
+
+    /// PID limit (max number of processes)
+    #[serde(default)]
+    pub pids_limit: Option<String>,
+
+    /// CPU weight for fair scheduling (1-10000, default 100)
+    #[serde(default)]
+    pub cpu_weight: Option<String>,
+
+    /// Memory+swap limit (e.g., "512M", "0" to disable swap)
+    #[serde(default)]
+    pub memory_swap_limit: Option<String>,
+
+    /// Port mappings (e.g., "8080:80", "8080:80/tcp")
+    #[serde(default)]
+    pub port_mappings: Vec<String>,
 }
 
 impl ContainerConfig {
@@ -219,6 +239,11 @@ mod tests {
             tty: false,
             isolate_user: false,
             isolate_network: false,
+            env: vec![],
+            pids_limit: None,
+            cpu_weight: None,
+            memory_swap_limit: None,
+            port_mappings: vec![],
         };
         assert!(config.validate().is_ok());
     }
@@ -234,6 +259,11 @@ mod tests {
             tty: false,
             isolate_user: false,
             isolate_network: false,
+            env: vec![],
+            pids_limit: None,
+            cpu_weight: None,
+            memory_swap_limit: None,
+            port_mappings: vec![],
         };
         assert!(config.validate().is_err());
     }
@@ -249,6 +279,11 @@ mod tests {
             tty: false,
             isolate_user: false,
             isolate_network: false,
+            env: vec![],
+            pids_limit: None,
+            cpu_weight: None,
+            memory_swap_limit: None,
+            port_mappings: vec![],
         };
         assert!(config.validate().is_err());
     }
@@ -264,6 +299,11 @@ mod tests {
             tty: false,
             isolate_user: false,
             isolate_network: false,
+            env: vec![],
+            pids_limit: None,
+            cpu_weight: None,
+            memory_swap_limit: None,
+            port_mappings: vec![],
         };
         assert!(config.validate().is_err());
     }
@@ -279,6 +319,11 @@ mod tests {
             tty: false,
             isolate_user: false,
             isolate_network: false,
+            env: vec![],
+            pids_limit: None,
+            cpu_weight: None,
+            memory_swap_limit: None,
+            port_mappings: vec![],
         };
         assert!(config.validate().is_err());
     }

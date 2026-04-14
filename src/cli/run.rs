@@ -37,6 +37,26 @@ pub struct RunArgs {
     #[arg(long)]
     pub isolate_network: bool,
 
+    /// Set environment variables (format: KEY=VALUE)
+    #[arg(short = 'e', long = "env", value_name = "KEY=VALUE")]
+    pub env: Vec<String>,
+
+    /// Limit number of PIDs (processes) in the container
+    #[arg(long)]
+    pub pids_limit: Option<String>,
+
+    /// CPU weight for fair scheduling (1-10000, default 100)
+    #[arg(long)]
+    pub cpu_weight: Option<String>,
+
+    /// Memory+swap limit (e.g., "512M")
+    #[arg(long)]
+    pub memory_swap: Option<String>,
+
+    /// Publish a container port to the host (e.g., -p 8080:80)
+    #[arg(short = 'p', long = "publish")]
+    pub publish: Vec<String>,
+
     /// Command to execute in the container
     #[arg(required = true, num_args = 1..)]
     pub command: Vec<String>,
@@ -55,6 +75,11 @@ pub async fn run_command(args: RunArgs) -> Result<(), IpcError> {
         tty: args.tty,
         isolate_user: args.isolate_user,
         isolate_network: args.isolate_network,
+        env: args.env,
+        pids_limit: args.pids_limit,
+        cpu_weight: args.cpu_weight,
+        memory_swap_limit: args.memory_swap,
+        port_mappings: args.publish,
     };
 
     let response = client.send_request(request).await?;
@@ -65,8 +90,8 @@ pub async fn run_command(args: RunArgs) -> Result<(), IpcError> {
             name,
             state,
         } => {
-            tracing::info!("{container_id}");
-            tracing::error!("Container '{name}' started with state: {state}");
+            println!("{container_id}");
+            println!("Container '{name}' started with state: {state}");
             Ok(())
         }
         DaemonResponse::ErrorResponse { message, .. } => {

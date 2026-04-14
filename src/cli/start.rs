@@ -24,7 +24,8 @@ pub async fn start_command(args: StartArgs) -> Result<(), IpcError> {
             container_id,
             state,
         } => {
-            tracing::info!("Container started with state: {state}, container_id: {container_id}");
+            println!("{container_id}");
+            println!("Container started with state: {state}");
             Ok(())
         }
         DaemonResponse::ErrorResponse { message, .. } => {

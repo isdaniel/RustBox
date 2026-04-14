@@ -3,10 +3,9 @@ use nix::{
     mount::{mount, umount2, MntFlags, MsFlags},
     pty::openpty,
     sched::{unshare, CloneFlags},
-    sys::wait::waitpid,
+    sys::wait::{waitpid, WaitStatus},
     unistd::{chdir, chroot, close, execv, fork, ForkResult},
 };
-use std::io::Write;
 use std::{
     ffi::CString,
     fs::{create_dir_all, read_to_string, remove_dir, write, OpenOptions},
@@ -31,6 +30,10 @@ pub struct SandboxConfig {
     pub tty: bool,
     pub isolate_user: bool,
     pub isolate_network: bool,
+    pub env: Vec<String>,
+    pub pids_limit: Option<String>,
+    pub cpu_weight: Option<String>,
+    pub memory_swap_limit: Option<String>,
 }
 
 /// Move any remaining PIDs in cgroup back to root cgroup before removing directory.
@@ -85,6 +88,24 @@ fn setup_cgroup(config: &SandboxConfig, cgroup_path: &Path, pid: u32) -> Result<
     let cpu_quota = parse_cpu_limit(&config.cpu_limit)?;
     write(cgroup_path.join("cpu.max"), cpu_quota)
         .map_err(|e| format!("Failed to set CPU limit: {e}"))?;
+
+    // PID limit (prevents fork bombs)
+    if let Some(ref pids_max) = config.pids_limit {
+        write(cgroup_path.join("pids.max"), pids_max)
+            .map_err(|e| format!("Failed to set PID limit: {e}"))?;
+    }
+
+    // CPU weight for fair scheduling (1-10000)
+    if let Some(ref weight) = config.cpu_weight {
+        write(cgroup_path.join("cpu.weight"), weight)
+            .map_err(|e| format!("Failed to set CPU weight: {e}"))?;
+    }
+
+    // Memory+swap limit
+    if let Some(ref swap_limit) = config.memory_swap_limit {
+        write(cgroup_path.join("memory.swap.max"), swap_limit)
+            .map_err(|e| format!("Failed to set memory swap limit: {e}"))?;
+    }
 
     write(cgroup_path.join("cgroup.procs"), pid.to_string())
         .map_err(|e| format!("Failed to add process to cgroup: {e}"))?;
@@ -215,23 +236,6 @@ fn mount_proc_and_dev(merged: &Path) -> Result<(), String> {
 /// Setup PTY redirection for TTY containers
 /// Configures stdin/stdout/stderr to use the PTY slave file descriptor
 fn setup_pty_redirection(slave_fd: RawFd) -> Result<(), String> {
-    // DEBUG: Write to a debug file to see slave_fd value
-    if let Ok(mut debug_file) = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open("/tmp/pty_debug.log")
-    {
-        let _ = writeln!(debug_file, "[INNER CHILD] slave_fd={}", slave_fd);
-        // Check what slave_fd points to
-        if let Ok(link) = std::fs::read_link(format!("/proc/self/fd/{}", slave_fd)) {
-            let _ = writeln!(
-                debug_file,
-                "[INNER CHILD] slave_fd {} points to: {:?}",
-                slave_fd, link
-            );
-        }
-    }
-
     // SAFETY: Creating a new session and setting up PTY controlling terminal
     // This is safe because:
     // 1. We're in a freshly forked child process with no other threads
@@ -402,6 +406,22 @@ fn setup_container_environment(config: &SandboxConfig, merged: &Path) -> Result<
 fn execute_command(config: &SandboxConfig) -> Result<(), String> {
     info!("(inner child) Executing command: {:?}", config.command);
 
+    // Setup environment variables
+    // Clear inherited environment
+    for (key, _) in std::env::vars() {
+        std::env::remove_var(&key);
+    }
+    // Set sensible defaults
+    std::env::set_var("PATH", "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin");
+    std::env::set_var("TERM", "xterm");
+    std::env::set_var("HOME", "/root");
+    // Set user-provided env vars
+    for env_var in &config.env {
+        if let Some((key, value)) = env_var.split_once('=') {
+            std::env::set_var(key, value);
+        }
+    }
+
     let program = CString::new(
         config
             .command
@@ -451,7 +471,7 @@ fn handle_inner_child(
 }
 
 /// Handle the inner parent process: wait for child and cleanup mounts
-fn handle_inner_parent(child: nix::unistd::Pid, pty_slave_fd: Option<RawFd>) -> Result<(), String> {
+fn handle_inner_parent(child: nix::unistd::Pid, pty_slave_fd: Option<RawFd>) -> Result<i32, String> {
     // Close PTY slave in the inner parent - only the inner child needs it
     // If we don't close it here, the namespaced parent keeps it open,
     // which can cause EIO when trying to read from the PTY master
@@ -460,18 +480,25 @@ fn handle_inner_parent(child: nix::unistd::Pid, pty_slave_fd: Option<RawFd>) -> 
     }
 
     info!("(inner parent) Waiting for inner child pid {}...", child);
-    let _ = waitpid(child, None);
+    let wait_status = waitpid(child, None)
+        .map_err(|e| format!("waitpid for inner child failed: {e}"))?;
 
-    info!("(inner parent) Cleaning up mounts inside namespace...");
+    let exit_code = match wait_status {
+        WaitStatus::Exited(_, code) => code,
+        WaitStatus::Signaled(_, signal, _) => 128 + signal as i32,
+        _ => 255,
+    };
 
-    Ok(())
+    info!("(inner parent) Inner child exited with code {}, cleaning up mounts inside namespace...", exit_code);
+
+    Ok(exit_code)
 }
 
 fn run_in_namespace_and_wait(
     config: &SandboxConfig,
     merged: &Path,
     pty_slave_fd: Option<RawFd>,
-) -> Result<(), String> {
+) -> Result<i32, String> {
     if let Some(fd) = pty_slave_fd {
         info!("(namespaced parent) Received PTY slave_fd={}", fd);
     }
@@ -658,9 +685,9 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<SandboxResult, String> {
 
             info!("(namespaced parent) Calling unshare & inner fork...");
             match run_in_namespace_and_wait(&config, &merged, pty_slave) {
-                Ok(_) => {
-                    info!("(namespaced parent) Inner child finished, exiting namespaced parent.");
-                    process::exit(0);
+                Ok(exit_code) => {
+                    info!("(namespaced parent) Inner child finished with exit code {}, exiting namespaced parent.", exit_code);
+                    process::exit(exit_code);
                 }
                 Err(e) => {
                     error!("(namespaced parent) Error: {}", e);
@@ -697,16 +724,25 @@ pub fn run_sandbox(config: SandboxConfig) -> Result<SandboxResult, String> {
     }
 }
 
-/// Wait for a container process to exit and perform cleanup
-pub fn wait_and_cleanup(sandbox_result: SandboxResult) -> Result<(), String> {
+/// Wait for a container process to exit and perform cleanup.
+/// Returns the exit code of the container process.
+pub fn wait_and_cleanup(sandbox_result: SandboxResult) -> Result<i32, String> {
     info!(
         "(outer parent) Waiting for namespaced parent pid {}...",
         sandbox_result.child_pid
     );
-    let _ = waitpid(sandbox_result.child_pid, None);
+    let wait_status = waitpid(sandbox_result.child_pid, None)
+        .map_err(|e| format!("waitpid failed: {e}"))?;
+
+    let exit_code = match wait_status {
+        WaitStatus::Exited(_, code) => code,
+        WaitStatus::Signaled(_, signal, _) => 128 + signal as i32,
+        _ => 255,
+    };
 
     info!(
-        "(outer parent) Cleaning up overlay mount at: {}",
+        "(outer parent) Process exited with code {}, cleaning up overlay mount at: {}",
+        exit_code,
         sandbox_result.cleanup_paths.merged.display()
     );
     umount_detach(&sandbox_result.cleanup_paths.merged);
@@ -718,5 +754,5 @@ pub fn wait_and_cleanup(sandbox_result: SandboxResult) -> Result<(), String> {
     drain_cgroup_and_remove(&sandbox_result.cleanup_paths.cgroup);
 
     info!("Container cleanup completed.");
-    Ok(())
+    Ok(exit_code)
 }

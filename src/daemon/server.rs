@@ -158,6 +158,11 @@ async fn process_request(
             tty,
             isolate_user,
             isolate_network,
+            env,
+            pids_limit,
+            cpu_weight,
+            memory_swap_limit,
+            port_mappings,
         } => {
             let config = rustbox::container::ContainerConfig {
                 memory_limit,
@@ -168,6 +173,11 @@ async fn process_request(
                 tty,
                 isolate_user,
                 isolate_network,
+                env,
+                pids_limit,
+                cpu_weight,
+                memory_swap_limit,
+                port_mappings,
             };
 
             match container_manager.handle_run(name, config).await {

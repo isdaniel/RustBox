@@ -4,6 +4,10 @@ use rustbox::container::{
     drain_cgroup_and_remove, run_sandbox, wait_and_cleanup, Container, ContainerConfig,
     SandboxConfig,
 };
+use rustbox::container::network::{
+    allocate_ip, cleanup_networking, create_veth_pair, ensure_bridge, parse_port_mappings,
+    setup_nat, setup_port_forwarding,
+};
 use rustbox::error::{ContainerError, DaemonError};
 use rustbox::ipc::{read_message, write_message, ContainerSummary, DaemonRequest, DaemonResponse};
 use rustbox::storage::{delete_metadata, load_all_metadata, save_metadata, ContainerLogs};
@@ -276,7 +280,15 @@ impl ContainerManager {
     ) {
         let mut registry = registry.write().await;
         if let Some(container) = registry.get_mut(container_id) {
-            let _ = container.mark_exited(exit_code);
+            // If the container was already stopped by user (handle_stop),
+            // keep it in Stopped state so it can be restarted.
+            // Only transition to Exited if it was Running (natural exit).
+            if container.state.is_running() {
+                let _ = container.mark_exited(exit_code);
+            }
+            // Store exit code even for stopped containers
+            container.exit_code = Some(exit_code);
+            container.pid = None;
             let _ = save_metadata(container);
         }
     }
@@ -314,16 +326,6 @@ impl ContainerManager {
             .map_err(|e| DaemonError::Storage(e.into()))?;
 
         info!("Container created: {} ({})", container_id, container_name);
-
-        // Mark container as starting (get a fake PID for now since we don't have the real one yet)
-        {
-            let mut registry = self.registry.write().await;
-            if let Some(container) = registry.get_mut(&container_id) {
-                // Transition to Running state (we'll get the real PID from sandbox later)
-                let _ = container.mark_started(1); // Temporary PID, will be updated
-                save_metadata(container).map_err(DaemonError::Storage)?;
-            }
-        }
 
         // Start the container process
         let container_clone = container.clone();
@@ -372,6 +374,10 @@ impl ContainerManager {
                 tty: container_clone.config.tty,
                 isolate_user: container_clone.config.isolate_user,
                 isolate_network: container_clone.config.isolate_network,
+                env: container_clone.config.env.clone(),
+                pids_limit: container_clone.config.pids_limit.clone(),
+                cpu_weight: container_clone.config.cpu_weight.clone(),
+                memory_swap_limit: container_clone.config.memory_swap_limit.clone(),
             };
 
             info!("Starting container {} in background task", cid);
@@ -390,6 +396,8 @@ impl ContainerManager {
                         result.child_pid.as_raw()
                     );
 
+                    let child_pid = result.child_pid.as_raw();
+
                     // Update container with PTY master FD, PID, and actual cgroup path immediately
                     {
                         let mut registry = registry_clone.write().await;
@@ -401,38 +409,79 @@ impl ContainerManager {
                                 cid,
                                 container.cgroup_path.display()
                             );
-                            let _ = container.mark_started(result.child_pid.as_raw());
-                            let _ = save_metadata(container);
-                            if let Some(fd) = result.pty_master {
-                                match unsafe { BorrowedFd::borrow_raw(fd) }.try_clone_to_owned() {
-                                    Ok(_) => {
-                                        info!(
-                                            "PTY master FD {} is valid immediately after storage",
-                                            fd
-                                        );
-                                    }
-                                    Err(e) => {
-                                        error!("PTY master FD {} is INVALID immediately after storage: {}", fd, e);
+                            if let Err(e) = container.mark_started(child_pid) {
+                                error!("Failed to mark container {} as started: {}", cid, e);
+                            }
+                            if let Err(e) = save_metadata(container) {
+                                error!("Failed to save metadata for container {}: {}", cid, e);
+                            }
+                        }
+                    }
+
+                    // Set up networking if isolate_network is enabled
+                    if container_clone.config.isolate_network {
+                        let net_cid = cid.clone();
+                        let port_mapping_specs = container_clone.config.port_mappings.clone();
+                        let registry_for_net = registry_clone.clone();
+
+                        match tokio::task::spawn_blocking(move || -> Result<_, String> {
+                            ensure_bridge()?;
+                            setup_nat()?;
+                            let container_ip = allocate_ip()?;
+                            let mut net_config = create_veth_pair(&net_cid, child_pid, container_ip)?;
+
+                            let parsed_mappings = parse_port_mappings(&port_mapping_specs);
+                            if !parsed_mappings.is_empty() {
+                                setup_port_forwarding(&parsed_mappings, container_ip)?;
+                                net_config.port_mappings = parsed_mappings;
+                            }
+                            Ok(net_config)
+                        })
+                        .await
+                        {
+                            Ok(Ok(net_config)) => {
+                                info!(
+                                    "Networking configured for container {}: IP={}",
+                                    cid, net_config.container_ip
+                                );
+                                let mut registry = registry_for_net.write().await;
+                                if let Some(container) = registry.get_mut(&cid) {
+                                    container.network_config = Some(net_config);
+                                    if let Err(e) = save_metadata(container) {
+                                        error!("Failed to save network config for container {}: {}", cid, e);
                                     }
                                 }
                             }
+                            Ok(Err(e)) => {
+                                error!("Failed to configure networking for container {}: {}", cid, e);
+                            }
+                            Err(e) => {
+                                error!("Networking task panicked for container {}: {}", cid, e);
+                            }
                         }
-                    } // Spawn a separate task to wait for container exit (don't await it!)
+                    }
+
                     let registry_clone2 = registry_clone.clone();
                     let cid2 = cid.clone();
                     tokio::spawn(async move {
                         // Wait for container to exit in a blocking task
-                        tokio::task::spawn_blocking(move || {
-                            let _ = wait_and_cleanup(result);
+                        let exit_code_result = tokio::task::spawn_blocking(move || {
+                            wait_and_cleanup(result)
                         })
-                        .await
-                        .ok();
+                        .await;
 
-                        info!("Container {} has exited", cid2);
+                        let exit_code = match exit_code_result {
+                            Ok(Ok(code)) => code,
+                            Ok(Err(e)) => {
+                                error!("Container {} cleanup failed: {}", cid2, e);
+                                255
+                            }
+                            Err(e) => {
+                                error!("Container {} wait task panicked: {}", cid2, e);
+                                255
+                            }
+                        };
 
-                        // Container has exited, update state
-                        // Note: wait_and_cleanup doesn't currently return exit code
-                        let exit_code = 0;
                         info!("Container {} exited with code: {}", cid2, exit_code);
                         Self::mark_container_exited(registry_clone2, &cid2, exit_code).await;
                     });
@@ -488,9 +537,6 @@ impl ContainerManager {
                 )));
             }
 
-            let _ = container.mark_started(1); // Temporary PID, will be updated
-            save_metadata(container).map_err(DaemonError::Storage)?;
-
             container.clone()
         };
 
@@ -528,6 +574,10 @@ impl ContainerManager {
                 tty: container.config.tty,
                 isolate_user: container.config.isolate_user,
                 isolate_network: container.config.isolate_network,
+                env: container.config.env.clone(),
+                pids_limit: container.config.pids_limit.clone(),
+                cpu_weight: container.config.cpu_weight.clone(),
+                memory_swap_limit: container.config.memory_swap_limit.clone(),
             };
 
             info!("Starting container {} in background task", cid);
@@ -546,6 +596,8 @@ impl ContainerManager {
                         result.child_pid.as_raw()
                     );
 
+                    let child_pid = result.child_pid.as_raw();
+
                     // Update container with PTY master FD, PID, and actual cgroup path immediately
                     {
                         let mut registry = registry_clone.write().await;
@@ -557,39 +609,79 @@ impl ContainerManager {
                                 cid,
                                 container.cgroup_path.display()
                             );
-                            let _ = container.mark_started(result.child_pid.as_raw());
-                            let _ = save_metadata(container);
-                            if let Some(fd) = result.pty_master {
-                                match unsafe { BorrowedFd::borrow_raw(fd) }.try_clone_to_owned() {
-                                    Ok(_) => {
-                                        info!(
-                                            "PTY master FD {} is valid immediately after storage",
-                                            fd
-                                        );
-                                    }
-                                    Err(e) => {
-                                        error!("PTY master FD {} is INVALID immediately after storage: {}", fd, e);
+                            if let Err(e) = container.mark_started(child_pid) {
+                                error!("Failed to mark container {} as started: {}", cid, e);
+                            }
+                            if let Err(e) = save_metadata(container) {
+                                error!("Failed to save metadata for container {}: {}", cid, e);
+                            }
+                        }
+                    }
+
+                    // Set up networking if isolate_network is enabled
+                    if container.config.isolate_network {
+                        let net_cid = cid.clone();
+                        let port_mapping_specs = container.config.port_mappings.clone();
+                        let registry_for_net = registry_clone.clone();
+
+                        match tokio::task::spawn_blocking(move || -> Result<_, String> {
+                            ensure_bridge()?;
+                            setup_nat()?;
+                            let container_ip = allocate_ip()?;
+                            let mut net_config = create_veth_pair(&net_cid, child_pid, container_ip)?;
+
+                            let parsed_mappings = parse_port_mappings(&port_mapping_specs);
+                            if !parsed_mappings.is_empty() {
+                                setup_port_forwarding(&parsed_mappings, container_ip)?;
+                                net_config.port_mappings = parsed_mappings;
+                            }
+                            Ok(net_config)
+                        })
+                        .await
+                        {
+                            Ok(Ok(net_config)) => {
+                                info!(
+                                    "Networking configured for container {}: IP={}",
+                                    cid, net_config.container_ip
+                                );
+                                let mut registry = registry_for_net.write().await;
+                                if let Some(container) = registry.get_mut(&cid) {
+                                    container.network_config = Some(net_config);
+                                    if let Err(e) = save_metadata(container) {
+                                        error!("Failed to save network config for container {}: {}", cid, e);
                                     }
                                 }
                             }
+                            Ok(Err(e)) => {
+                                error!("Failed to configure networking for container {}: {}", cid, e);
+                            }
+                            Err(e) => {
+                                error!("Networking task panicked for container {}: {}", cid, e);
+                            }
                         }
-                    } 
+                    }
 
                     let registry_clone2 = registry_clone.clone();
                     let cid2 = cid.clone();
                     tokio::spawn(async move {
                         // Wait for container to exit in a blocking task
-                        tokio::task::spawn_blocking(move || {
-                            let _ = wait_and_cleanup(result);
+                        let exit_code_result = tokio::task::spawn_blocking(move || {
+                            wait_and_cleanup(result)
                         })
-                        .await
-                        .ok();
+                        .await;
 
-                        info!("Container {} has exited", cid2);
+                        let exit_code = match exit_code_result {
+                            Ok(Ok(code)) => code,
+                            Ok(Err(e)) => {
+                                error!("Container {} cleanup failed: {}", cid2, e);
+                                255
+                            }
+                            Err(e) => {
+                                error!("Container {} wait task panicked: {}", cid2, e);
+                                255
+                            }
+                        };
 
-                        // Container has exited, update state
-                        // Note: wait_and_cleanup doesn't currently return exit code
-                        let exit_code = 0;
                         info!("Container {} exited with code: {}", cid2, exit_code);
                         Self::mark_container_exited(registry_clone2, &cid2, exit_code).await;
                     });
@@ -645,6 +737,14 @@ impl ContainerManager {
         // Get the PID if available
         let pid = container.pid;
 
+        // Clean up networking if configured
+        if let Some(ref net_config) = container.network_config {
+            if let Err(e) = cleanup_networking(net_config) {
+                warn!("Failed to cleanup networking for container {}: {}", container_id, e);
+            }
+            container.network_config = None;
+        }
+
         // Mark as stopped first
         container
             .mark_stopped()
@@ -670,11 +770,11 @@ impl ContainerManager {
                 Ok(()) => {
                     info!("SIGTERM sent to PID {}", pid);
 
-                    // Wait for process to exit gracefully (up to 10 seconds)
-                    let timeout = std::time::Duration::from_secs(10);
+                    // Wait for process to exit gracefully (up to timeout seconds)
+                    let timeout_duration = std::time::Duration::from_secs(timeout);
                     let start = std::time::Instant::now();
 
-                    while start.elapsed() < timeout {
+                    while start.elapsed() < timeout_duration {
                         // Check if process is still alive
                         match nix::sys::signal::kill(
                             nix::unistd::Pid::from_raw(pid),
@@ -794,11 +894,26 @@ impl ContainerManager {
             warn!("Failed to cleanup overlay for {}: {}", container_id, e);
         }
 
-        // Cleanup cgroup
-        drain_cgroup_and_remove(&container.cgroup_path);
+        // Cleanup networking if configured
+        if let Some(ref net_config) = container.network_config {
+            if let Err(e) = cleanup_networking(net_config) {
+                warn!("Failed to cleanup networking for {}: {}", container_id, e);
+            }
+        }
+
+        // Cleanup cgroup (skip if path was never set)
+        if container.cgroup_path.as_os_str().len() > 0 && container.cgroup_path.exists() {
+            drain_cgroup_and_remove(&container.cgroup_path);
+        }
 
         // Delete metadata from disk
         delete_metadata(&container_id).map_err(DaemonError::Storage)?;
+
+        // Delete log files
+        let logs = ContainerLogs::new(container_id.clone());
+        if let Err(e) = logs.cleanup() {
+            warn!("Failed to cleanup logs for {}: {}", container_id, e);
+        }
 
         info!("Container removed: {}", container_id);
 
@@ -1209,6 +1324,11 @@ mod tests {
             tty: false,
             isolate_user: false,
             isolate_network: false,
+            env: vec![],
+            pids_limit: None,
+            cpu_weight: None,
+            memory_swap_limit: None,
+            port_mappings: vec![],
         }
     }
 

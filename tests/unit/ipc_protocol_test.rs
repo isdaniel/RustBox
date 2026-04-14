@@ -13,6 +13,11 @@ fn test_daemon_request_serialization() {
         tty: false,
         isolate_user: false,
         isolate_network: false,
+        env: vec![],
+        pids_limit: None,
+        cpu_weight: None,
+        memory_swap_limit: None,
+        port_mappings: vec![],
     };
     
     // Serialize to JSON

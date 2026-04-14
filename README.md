@@ -1,6 +1,6 @@
 # RustBox
 
-> A Docker-like container runtime written in Rust with daemon architecture, supporting multi-container orchestration, persistent state management, and comprehensive CLI commands.
+> A Docker-like container runtime written in Rust with daemon architecture, supporting multi-container orchestration, persistent state management, container networking, and comprehensive CLI commands.
 
 ## Overview
 
@@ -9,9 +9,11 @@
 - **Daemon Architecture** with Unix domain socket communication
 - **Multi-container Management** with persistent state
 - **Container Restart Support** with preserved filesystem state
+- **Container Networking** with bridge, veth pairs, NAT, and port forwarding
 - **OverlayFS** for isolated container filesystems  
-- **Cgroups v2** for resource limits (memory, CPU)
+- **Cgroups v2** for resource limits (memory, CPU, PIDs, swap)
 - **Linux namespaces** for complete process isolation
+- **Environment Variables** passed into containers at runtime
 - **Comprehensive CLI** with run, start, stop, list, inspect, remove, logs, and attach commands
 
 This tool is designed for container orchestration, testing environments, and secure code execution.
@@ -179,9 +181,10 @@ graph LR
 
 ### Persistent State Management
 
-- **Container metadata**: `/var/lib/rustbox/containers/<container-id>.json`
+- **Container metadata**: `/var/lib/rustbox/containers/<container-id>.json` (includes network config, exit code, etc.)
 - **Container logs**: `/var/lib/rustbox/logs/<container-id>/`
-- **Overlay filesystems**: `/var/lib/rustbox/overlay/<container-id>/`
+- **Overlay filesystems**: `/var/lib/rustbox/overlay/<container-id>/` (upperdir persists across restarts)
+- **Network state**: `/tmp/rustbox/network/ip_counter`
 - **State recovery**: Daemon recovers container state on restart
 
 ## Installation
@@ -254,14 +257,23 @@ sudo ./target/release/rustbox run --memory 256M /usr/bin/python3 script.py
 # Run a container with user namespace isolation
 sudo ./target/release/rustbox run --tty --isolate-user /bin/bash
 
-# Run a container with network namespace isolation
-sudo ./target/release/rustbox run --tty --isolate-network /bin/bash
+# Run a container with network namespace isolation and port forwarding
+sudo ./target/release/rustbox run --tty --isolate-network -p 8080:80 /bin/bash
+
+# Run a container with environment variables
+sudo ./target/release/rustbox run --tty -e MY_VAR=hello -e DEBUG=1 /bin/bash
+
+# Run a container with enhanced resource limits
+sudo ./target/release/rustbox run --tty --memory 256M --cpu 0.5 --pids-limit 100 --cpu-weight 50 --memory-swap 512M /bin/bash
 
 # Run a container with both user and network isolation
 sudo ./target/release/rustbox run --tty --isolate-user --isolate-network /bin/bash
 
 # Stop a running container
 sudo ./target/release/rustbox stop <container-id>
+
+# Stop a container with custom timeout (seconds)
+sudo ./target/release/rustbox stop --timeout 30 <container-id>
 
 # Start a stopped container (preserves filesystem state)
 sudo ./target/release/rustbox start <container-id>
@@ -325,70 +337,11 @@ sudo ./target/release/rustbox remove --force <container-id>
 - `--tty` - Allocate a pseudo-TTY for interactive use (required for attach)
 - `--isolate-user` - Enable user namespace isolation (CLONE_NEWUSER)
 - `--isolate-network` - Enable network namespace isolation (CLONE_NEWNET)
-
-## Directory Structure
-
-### Runtime Directories (created by daemon)
-
-```
-/var/lib/rustbox/
-├── containers/           # Container metadata (JSON files)
-│   ├── a1b2c3d4e5f6.json
-│   └── f6e5d4c3b2a1.json
-├── logs/                 # Container logs
-│   ├── a1b2c3d4e5f6/
-│   │   ├── stdout.log
-│   │   └── stderr.log
-│   └── f6e5d4c3b2a1/
-│       ├── stdout.log
-│       └── stderr.log
-└── overlay/              # Overlay filesystem layers
-    ├── a1b2c3d4e5f6/
-    │   ├── lowerdir/     # Read-only base layer
-    │   ├── upperdir/     # Container changes
-    │   ├── workdir/      # Overlay work directory
-    │   └── merged/       # Final mounted filesystem
-    └── f6e5d4c3b2a1/
-        ├── lowerdir/
-        ├── upperdir/
-        ├── workdir/
-        └── merged/
-```
-
-### Source Code Structure
-
-```
-src/
-├── lib.rs                # Public API exports
-├── main.rs               # Client CLI entry point
-├── daemon/               # Daemon implementation
-│   ├── main.rs          # Daemon entry point
-│   ├── server.rs        # Unix socket server
-│   ├── container_manager.rs # Container lifecycle management
-│   └── signal_handler.rs # Graceful shutdown handling
-├── ipc/                  # Inter-process communication
-│   ├── protocol.rs      # Message types and framing
-│   └── client.rs        # Client-side socket communication
-├── container/            # Container abstractions
-│   ├── mod.rs           # Container data structures
-│   ├── config.rs        # Configuration and validation
-│   ├── sandbox.rs       # Core isolation logic
-│   ├── state_machine.rs # Container state transitions
-│   └── id.rs            # ID generation and validation
-├── storage/              # Persistent storage
-│   ├── metadata.rs      # Container metadata management
-│   └── logs.rs          # Log file management  
-├── cli/                  # CLI command implementations
-│   ├── run.rs           # Create and start containers
-│   ├── start.rs         # Start stopped containers
-│   ├── stop.rs          # Stop containers
-│   ├── list.rs          # List containers
-│   ├── inspect.rs       # Container details
-│   ├── remove.rs        # Remove containers
-│   ├── logs.rs          # View container logs
-│   └── attach.rs        # Attach to containers
-└── error.rs             # Error handling
-```
+- `-e, --env` - Set environment variables (e.g., `-e KEY=VALUE`), can be specified multiple times
+- `-p, --publish` - Publish container port to host (e.g., `-p 8080:80`, `-p 53:53/udp`), can be specified multiple times
+- `--pids-limit` - Maximum number of processes in the container (e.g., "100")
+- `--cpu-weight` - CPU weight for cgroup scheduling (1-10000, default: 100)
+- `--memory-swap` - Memory+swap limit (e.g., "512M", "1G")
 
 ## Technical Details
 
@@ -405,6 +358,84 @@ Example:
 0x0000001E  {"type":"ListRequest","all":true}
 ```
 
+### Container Networking
+
+When a container is started with `--isolate-network`, RustBox sets up a full networking stack:
+
+```
+┌──────────────────────────────────────────────────────────────┐
+│  Host Network                                                │
+│                                                              │
+│  ┌──────────────┐     ┌──────────────┐                       │
+│  │  rustbox0     │     │  eth0 (host) │                       │
+│  │  (bridge)     │     │              │                       │
+│  │  10.88.0.1/16 │     └──────┬───────┘                       │
+│  └──────┬───────┘            │                               │
+│         │                    │                               │
+│    ┌────┴────┐          iptables NAT                         │
+│    │ veth_*  │          MASQUERADE                            │
+│    │ (host)  │          (10.88.0.0/16 → outbound)            │
+│    └────┬────┘          DNAT                                 │
+│         │               (host_port → container_ip:port)      │
+│  ───────┼────────────────────────────────────────────────    │
+│         │  (netns boundary)                                  │
+│    ┌────┴────┐                                               │
+│    │  eth0   │  Container Network Namespace                  │
+│    │  10.88  │                                               │
+│    │  .0.X   │  default route via 10.88.0.1                  │
+│    └─────────┘                                               │
+└──────────────────────────────────────────────────────────────┘
+```
+
+**Components:**
+
+- **Bridge** (`rustbox0`): A Linux bridge at `10.88.0.1/16` connecting all container veth pairs
+- **Veth pairs**: Virtual ethernet links — one end on the host (attached to bridge), one end inside the container namespace
+- **NAT/Masquerade**: iptables MASQUERADE rule allows containers to access external networks through the host
+- **Port forwarding**: iptables DNAT rules forward traffic from host ports to container ports (configured via `-p` flag)
+- **IP allocation**: File-based counter allocates unique IPs from the `10.88.0.0/16` subnet
+
+**Port Mapping Syntax:**
+
+```bash
+# Map host port 8080 to container port 80 (TCP, default)
+-p 8080:80
+
+# Map with explicit protocol
+-p 8080:80/tcp
+-p 53:53/udp
+
+# Multiple port mappings
+-p 8080:80 -p 443:443
+```
+
+### Environment Variables
+
+Environment variables can be passed to containers using the `-e` flag:
+
+```bash
+sudo ./target/release/rustbox run --tty -e MY_VAR=hello -e PATH=/usr/local/bin:/usr/bin:/bin /bin/bash
+```
+
+Default environment variables set inside every container:
+- `PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`
+- `TERM=xterm`
+- `HOME=/root`
+
+User-specified variables override defaults.
+
+### Resource Limits (Cgroups v2)
+
+RustBox enforces resource limits through cgroups v2:
+
+| Flag | Cgroup file | Description |
+|------|-------------|-------------|
+| `--memory` | `memory.max` | Hard memory limit |
+| `--memory-swap` | `memory.swap.max` | Swap space limit |
+| `--cpu` | `cpu.max` | CPU time limit (fraction of one core) |
+| `--cpu-weight` | `cpu.weight` | CPU scheduling weight (1-10000) |
+| `--pids-limit` | `pids.max` | Maximum number of processes |
+
 ## Known Limitations
 
 ### Container Lifecycle
@@ -413,9 +444,10 @@ Example:
   - Use `run` to create a new container instance if restart is needed for exited containers
 
 ### Networking
-- Network isolation (`--isolate-network`) provides complete isolation without NAT or bridge networking
-- No port forwarding or network connectivity for isolated containers
-- Consider using host network (default) for containers requiring network access
+- Bridge and iptables rules require root privileges and `iptables` installed on the host
+- Port forwarding uses DNAT rules — only one container can bind a given host port at a time
+- IP allocation counter persists at `/tmp/rustbox/network/ip_counter`; clearing `/tmp/rustbox` resets it
+- DNS resolution inside containers requires a `/etc/resolv.conf` in the rootfs
 
 ### User Namespaces
 - User namespace isolation (`--isolate-user`) may require kernel configuration
@@ -430,4 +462,4 @@ Example:
 ### Resource Management
 - Cgroups v2 required (kernel 5.x or higher)
 - Memory and CPU limits enforced but not strictly guaranteed under all conditions
-- Swap limits depend on kernel configuration
+- Swap limits depend on kernel configuration and `CONFIG_MEMCG_SWAP`

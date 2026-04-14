@@ -35,6 +35,11 @@
 //!     tty: false,
 //!     isolate_user: false,
 //!     isolate_network: false,
+//!     env: vec![],
+//!     pids_limit: None,
+//!     cpu_weight: None,
+//!     memory_swap_limit: None,
+//!     port_mappings: vec![],
 //! };
 //!
 //! let container = Container::new(Some("myapp".to_string()), config);
@@ -43,6 +48,7 @@
 
 pub mod config;
 pub mod id;
+pub mod network;
 pub mod sandbox;
 pub mod state_machine;
 
@@ -89,6 +95,11 @@ pub use state_machine::ContainerState;
 ///     tty: false,
 ///     isolate_user: false,
 ///     isolate_network: false,
+///     env: vec![],
+///     pids_limit: None,
+///     cpu_weight: None,
+///     memory_swap_limit: None,
+///     port_mappings: vec![],
 /// };
 ///
 /// let container = Container::new(Some("web-server".to_string()), config);
@@ -134,6 +145,10 @@ pub struct Container {
     /// Note: This is not persisted across daemon restarts as FDs are process-specific
     #[serde(skip)]
     pub pty_master: Option<std::os::unix::io::RawFd>,
+
+    /// Network configuration (None for non-networked containers)
+    #[serde(default)]
+    pub network_config: Option<network::NetworkConfig>,
 }
 
 impl Container {
@@ -166,6 +181,11 @@ impl Container {
     ///     tty: false,
     ///     isolate_user: false,
     ///     isolate_network: false,
+    ///     env: vec![],
+    ///     pids_limit: None,
+    ///     cpu_weight: None,
+    ///     memory_swap_limit: None,
+    ///     port_mappings: vec![],
     /// };
     ///
     /// // Create with explicit name
@@ -180,11 +200,8 @@ impl Container {
         let id = generate_container_id();
         let name = name.unwrap_or_else(generate_container_name);
         let overlay_paths = OverlayPaths::new(&id, &config.rootfs_path);
-        let cgroup_path = PathBuf::from(crate::constants::CGROUP_BASE).join(format!(
-            "{}_{}",
-            crate::constants::CGROUP_NAMESPACE,
-            id
-        ));
+        // cgroup_path is set after sandbox starts (uses child PID)
+        let cgroup_path = PathBuf::new();
 
         Container {
             id,
@@ -199,6 +216,7 @@ impl Container {
             cgroup_path,
             pid: None,
             pty_master: None,
+            network_config: None,
         }
     }
 
@@ -230,6 +248,11 @@ impl Container {
     ///     tty: false,
     ///     isolate_user: false,
     ///     isolate_network: false,
+    ///     env: vec![],
+    ///     pids_limit: None,
+    ///     cpu_weight: None,
+    ///     memory_swap_limit: None,
+    ///     port_mappings: vec![],
     /// };
     ///
     /// let mut container = Container::new(None, config);
@@ -272,6 +295,11 @@ impl Container {
     ///     tty: false,
     ///     isolate_user: false,
     ///     isolate_network: false,
+    ///     env: vec![],
+    ///     pids_limit: None,
+    ///     cpu_weight: None,
+    ///     memory_swap_limit: None,
+    ///     port_mappings: vec![],
     /// };
     ///
     /// let mut container = Container::new(None, config);
@@ -347,6 +375,11 @@ mod tests {
             tty: false,
             isolate_user: false,
             isolate_network: false,
+            env: vec![],
+            pids_limit: None,
+            cpu_weight: None,
+            memory_swap_limit: None,
+            port_mappings: vec![],
         }
     }
 

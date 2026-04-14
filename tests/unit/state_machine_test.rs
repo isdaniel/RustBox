@@ -59,6 +59,11 @@ fn test_container_lifecycle() {
         tty: false,
         isolate_user: false,
         isolate_network: false,
+        env: vec![],
+        pids_limit: None,
+        cpu_weight: None,
+        memory_swap_limit: None,
+        port_mappings: vec![],
     };
     
     let mut container = Container::new(Some("test".to_string()), config);
@@ -90,6 +95,11 @@ fn test_container_start_stop_start_lifecycle() {
         tty: false,
         isolate_user: false,
         isolate_network: false,
+        env: vec![],
+        pids_limit: None,
+        cpu_weight: None,
+        memory_swap_limit: None,
+        port_mappings: vec![],
     };
     
     let mut container = Container::new(Some("restart_test".to_string()), config);
@@ -135,6 +145,11 @@ fn test_container_cannot_restart_after_exit() {
         tty: false,
         isolate_user: false,
         isolate_network: false,
+        env: vec![],
+        pids_limit: None,
+        cpu_weight: None,
+        memory_swap_limit: None,
+        port_mappings: vec![],
     };
     
     let mut container = Container::new(Some("exit_test".to_string()), config);
@@ -162,6 +177,11 @@ fn test_container_multiple_restart_cycles() {
         tty: false,
         isolate_user: false,
         isolate_network: false,
+        env: vec![],
+        pids_limit: None,
+        cpu_weight: None,
+        memory_swap_limit: None,
+        port_mappings: vec![],
     };
     
     let mut container = Container::new(Some("multi_restart".to_string()), config);
@@ -195,6 +215,11 @@ fn test_container_stopped_to_exited_transition() {
         tty: false,
         isolate_user: false,
         isolate_network: false,
+        env: vec![],
+        pids_limit: None,
+        cpu_weight: None,
+        memory_swap_limit: None,
+        port_mappings: vec![],
     };
     
     let mut container = Container::new(Some("stop_exit_test".to_string()), config);
@@ -224,6 +249,11 @@ fn test_container_state_cannot_go_backwards() {
         tty: false,
         isolate_user: false,
         isolate_network: false,
+        env: vec![],
+        pids_limit: None,
+        cpu_weight: None,
+        memory_swap_limit: None,
+        port_mappings: vec![],
     };
     
     let mut container = Container::new(Some("backwards_test".to_string()), config);

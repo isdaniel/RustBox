@@ -21,6 +21,16 @@ pub enum DaemonRequest {
         isolate_user: bool,
         #[serde(default)]
         isolate_network: bool,
+        #[serde(default)]
+        env: Vec<String>,
+        #[serde(default)]
+        pids_limit: Option<String>,
+        #[serde(default)]
+        cpu_weight: Option<String>,
+        #[serde(default)]
+        memory_swap_limit: Option<String>,
+        #[serde(default)]
+        port_mappings: Vec<String>,
     },
     StopRequest {
         container_id: String,
@@ -175,6 +185,11 @@ impl DaemonRequest {
                 tty,
                 isolate_user,
                 isolate_network,
+                env,
+                pids_limit,
+                cpu_weight,
+                memory_swap_limit,
+                port_mappings,
                 ..
             } => Some(ContainerConfig {
                 memory_limit: memory_limit.clone(),
@@ -185,6 +200,11 @@ impl DaemonRequest {
                 tty: *tty,
                 isolate_user: *isolate_user,
                 isolate_network: *isolate_network,
+                env: env.clone(),
+                pids_limit: pids_limit.clone(),
+                cpu_weight: cpu_weight.clone(),
+                memory_swap_limit: memory_swap_limit.clone(),
+                port_mappings: port_mappings.clone(),
             }),
             _ => None,
         }

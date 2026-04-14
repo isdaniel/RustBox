@@ -1,5 +1,6 @@
 use crate::constants::METADATA_DIR;
 use crate::container::{Container, ContainerConfig, ContainerState, OverlayPaths};
+use crate::container::network::NetworkConfig;
 use crate::error::StorageError;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
@@ -22,6 +23,8 @@ pub struct ContainerMetadata {
     pub cgroup_path: PathBuf,
     pub pid: Option<i32>,
     pub has_tty: bool,
+    #[serde(default)]
+    pub network_config: Option<NetworkConfig>,
 }
 
 impl From<&Container> for ContainerMetadata {
@@ -39,6 +42,7 @@ impl From<&Container> for ContainerMetadata {
             cgroup_path: container.cgroup_path.clone(),
             pid: container.pid,
             has_tty: container.pty_master.is_some(),
+            network_config: container.network_config.clone(),
         }
     }
 }
@@ -58,6 +62,7 @@ impl From<ContainerMetadata> for Container {
             cgroup_path: metadata.cgroup_path,
             pid: metadata.pid,
             pty_master: None, // PTY master FD is not persisted, will be recreated if needed
+            network_config: metadata.network_config,
         }
     }
 }
@@ -171,6 +176,11 @@ mod tests {
             tty: false,
             isolate_user: false,
             isolate_network: false,
+            env: vec![],
+            pids_limit: None,
+            cpu_weight: None,
+            memory_swap_limit: None,
+            port_mappings: vec![],
         }
     }
 

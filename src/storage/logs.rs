@@ -100,18 +100,12 @@ impl ContainerLogs {
     }
 
     /// Delete log files and directory for this container
-    fn cleanup(&self) -> Result<(), String> {
+    pub fn cleanup(&self) -> Result<(), String> {
         if self.log_dir.exists() {
             fs::remove_dir_all(&self.log_dir)
                 .map_err(|e| format!("Failed to remove log directory: {e}"))?;
         }
         Ok(())
-    }
-}
-
-impl Drop for ContainerLogs {
-    fn drop(&mut self) {
-        let _ = self.cleanup();
     }
 }
 
